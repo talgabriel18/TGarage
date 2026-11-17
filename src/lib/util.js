@@ -12,4 +12,5 @@ export function wear(p, car) {
   const rem = Math.min(remKm, remMo * m), luni = Math.min(remKm / m, remMo)
   return {pct, rem, luni, col: pct > 0.4 ? '#10b981' : pct > 0.15 ? '#f59e0b' : '#ef4444'}
 }
+export const durata = m => { if (m == null || !isFinite(m)) return '—'; const t = Math.round(m); if (t < 1) return 'sub o lună'; if (t >= 120) return 'peste 10 ani'; const a = Math.floor(t / 12), l = t % 12; return [a ? `${a} ${a === 1 ? 'an' : 'ani'}` : '', l ? `${l} ${l === 1 ? 'lună' : 'luni'}` : ''].filter(Boolean).join(' și ') }
 export const daysTo = d => Math.ceil((new Date(d) - new Date(today())) / 864e5)
