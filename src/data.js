@@ -1,5 +1,6 @@
+import {CAT_NAMES, forType} from './catalog'
 export const TIPURI = ['Benzină', 'Diesel', 'GPL', 'Hibrid', 'PHEV', 'Electric']
-export const CATS = ['Motor & Propulsie', 'Sistem Frânare', 'Suspensie & Direcție', 'Filtre & Lichide', 'Baterie & Electrică', 'Anvelope & Roți', 'Caroserie']
+export const CATS = Object.values(CAT_NAMES)
 export const DEFAULT_PRICES = {Benzină: 9.8, Motorină: 10.84, GPL: 4.78, kWh: 1.9}
 export const priceKeys = t => ({Electric: ['kWh'], Diesel: ['Motorină'], GPL: ['GPL', 'Benzină'], PHEV: ['Benzină', 'kWh']}[t] || ['Benzină'])
 export const fuelKey = t => ({Electric: 'kWh', Diesel: 'Motorină', GPL: 'GPL'}[t] || 'Benzină')
@@ -19,16 +20,9 @@ export const BODY = {
 // Rotația modelului .glb pe axa Y (radiani). Fața mașinii trebuie să fie spre +X. Ajustează dacă apare întors.
 export const ROT = {Sedan: 0, SUV: 0, Hatchback: 0, Break: 0, Coupe: 0, Pickup: 0}
 // Poziții puncte pulsatorii [x,y,z], pentru modelul de bază. Suprascrie per caroserie după ce pui modelele .glb.
-export const HOT = {ulei: [1.5,.6,0], frana: [1.3,.3,.9], amortizor: [-1.3,.3,-.9], anvelope: [-1.3,.2,.9], baterie12: [1.2,.7,-.5], distributie: [1.6,.5,.3], filtre: [1.2,.8,.4], habitaclu: [0,.9,.3], bateriaHV: [0,.1,0], racire: [.8,.2,-.6], caroserie: [0,1,.8], gpl: [-1.4,.5,0]}
+export const HOT = {ulei: [1.5,.6,0], frana: [1.3,.3,.9], amortizor: [-1.3,.3,-.9], anvelope: [-1.3,.2,.9], baterie12: [1.2,.7,-.5], distributie: [1.6,.5,.3], filtre: [1.2,.8,.4], habitaclu: [0,.9,.3], bateriaHV: [0,.1,0], racire: [.8,.2,-.6], caroserie: [0,1,.8], gpl: [-1.4,.5,0], transmisie: [0,.4,0], evacuare: [-1.6,.25,0], clima: [1.3,.7,-.3], lumini: [1.8,.6,.5], directie: [1.2,.35,-.9]}
 export const HOT_OVERRIDE = {} // ex: {SUV: {bateriaHV: [0,.2,0]}}
 export const posFor = (body, key) => (HOT_OVERRIDE[body] && HOT_OVERRIDE[body][key]) || HOT[key] || [0, .8, 0]
 
-// Piese urmărite (durată în km și în luni)
-export function template(t) {
-  const T = (name, category, hot, life_km, life_months) => ({name, category, hot, life_km, life_months})
-  if (t === 'Electric') return [T('Filtru habitaclu','Filtre & Lichide','habitaclu',25000,12), T('Plăcuțe frână','Sistem Frânare','frana',80000,60), T('Lichid frână','Sistem Frânare','frana',60000,24), T('Anvelope','Anvelope & Roți','anvelope',45000,60), T('Amortizoare','Suspensie & Direcție','amortizor',100000,96), T('Baterie tracțiune','Baterie & Electrică','bateriaHV',250000,96), T('Lichid răcire baterie','Filtre & Lichide','racire',60000,48), T('Baterie 12V','Baterie & Electrică','baterie12',80000,48)]
-  const ice = [T('Ulei motor','Motor & Propulsie','ulei',t === 'Diesel' ? 10000 : 15000,12), T('Filtre (aer, polen)','Filtre & Lichide','filtre',30000,24), T('Distribuție','Motor & Propulsie','distributie',120000,72), T('Plăcuțe frână față','Sistem Frânare','frana',40000,48), T('Lichid frână','Sistem Frânare','frana',60000,24), T('Amortizoare','Suspensie & Direcție','amortizor',90000,96), T('Anvelope','Anvelope & Roți','anvelope',50000,60), T('Baterie 12V','Baterie & Electrică','baterie12',80000,60)]
-  if (t === 'GPL') ice.push(T('Revizie instalație GPL','Motor & Propulsie','gpl',15000,12))
-  if (t === 'Hibrid' || t === 'PHEV') ice.push(T('Baterie tracțiune','Baterie & Electrică','bateriaHV',200000,96))
-  return ice
-}
+// Piese urmărite implicit la mașină nouă (restul se adaugă din catalog)
+export const template = t => forType(t).filter(c => c.def).map(({name, category, hot, life_km, life_months}) => ({name, category, hot, life_km, life_months}))
