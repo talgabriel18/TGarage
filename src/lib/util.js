@@ -1,0 +1,15 @@
+export const ro = n => Number(n || 0).toLocaleString('ro-RO', {maximumFractionDigits: 1})
+export const ron = n => Number(n || 0).toLocaleString('ro-RO', {style: 'currency', currency: 'RON'})
+export const dt = d => d ? new Date(d).toLocaleDateString('ro-RO') : '—'
+export const today = () => new Date().toISOString().slice(0, 10)
+export const STIL = [0.8, 1, 1.15] // Oraș, Mixt, Autostradă
+export const STIL_N = ['Oraș', 'Mixt', 'Autostradă']
+export function wear(p, car) {
+  const m = car.monthly_km || 1200, L = (p.life_km || 1) * STIL[car.style ?? 1]
+  const remKm = Math.max(0, L - (car.odometer - (p.last_odo || 0)))
+  const remMo = p.life_months ? Math.max(0, p.life_months - (Date.now() - new Date(p.last_date)) / 2.63e9) : Infinity
+  const pct = Math.min(remKm / L, p.life_months ? remMo / p.life_months : 1)
+  const rem = Math.min(remKm, remMo * m), luni = Math.min(remKm / m, remMo)
+  return {pct, rem, luni, col: pct > 0.4 ? '#10b981' : pct > 0.15 ? '#f59e0b' : '#ef4444'}
+}
+export const daysTo = d => Math.ceil((new Date(d) - new Date(today())) / 864e5)
