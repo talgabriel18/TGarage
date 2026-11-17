@@ -1,18 +1,20 @@
 import {useState} from 'react'
 import {supabase as sb} from '../lib/supabase'
-import {ro, ron, dt, daysTo} from '../lib/util'
+import {ro, ron, dt, daysTo, wear} from '../lib/util'
 
 const TABLES = ['vehicles', 'vehicle_parts', 'maintenance_logs', 'fuel_logs', 'documents', 'prices']
 
-function ics(docs, car) {
-  const e = d => d.replaceAll('-', '')
-  const ev = docs.map(d => `BEGIN:VEVENT\r\nUID:${d.id}@garaj3d\r\nDTSTAMP:${e(new Date().toISOString().slice(0, 10))}T000000Z\r\nDTSTART;VALUE=DATE:${e(d.expires_on)}\r\nSUMMARY:${d.type} expiră – ${car.brand} ${car.model || ''}\r\nBEGIN:VALARM\r\nTRIGGER:-P14D\r\nACTION:DISPLAY\r\nDESCRIPTION:${d.type} expiră în 14 zile\r\nEND:VALARM\r\nEND:VEVENT`).join('\r\n')
+function ics(docs, car, parts) {
+  const e = d => d.replaceAll('-', ''), ev = []
+  docs.forEach(d => ev.push({id: d.id, date: d.expires_on, t: `${d.type} expiră – ${car.brand} ${car.model || ''}`}))
+  parts.forEach(p => { const w = wear(p, car); if (w.pct < .6 && isFinite(w.luni)) ev.push({id: p.id, date: new Date(Date.now() + Math.min(w.luni, 120) * 30.4 * 864e5).toISOString().slice(0, 10), t: `Service estimat: ${p.name} – ${car.brand} ${car.model || ''}`}) })
+  const body = ev.map(x => `BEGIN:VEVENT\r\nUID:${x.id}@garaj3d\r\nDTSTAMP:${e(new Date().toISOString().slice(0, 10))}T000000Z\r\nDTSTART;VALUE=DATE:${e(x.date)}\r\nSUMMARY:${x.t}\r\nBEGIN:VALARM\r\nTRIGGER:-P14D\r\nACTION:DISPLAY\r\nDESCRIPTION:${x.t}\r\nEND:VALARM\r\nEND:VEVENT`).join('\r\n')
   const a = document.createElement('a')
-  a.href = URL.createObjectURL(new Blob([`BEGIN:VCALENDAR\r\nVERSION:2.0\r\nPRODID:-//Garaj3D//RO\r\n${ev}\r\nEND:VCALENDAR`], {type: 'text/calendar'}))
-  a.download = 'acte-auto.ics'; a.click()
+  a.href = URL.createObjectURL(new Blob([`BEGIN:VCALENDAR\r\nVERSION:2.0\r\nPRODID:-//Garaj3D//RO\r\n${body}\r\nEND:VCALENDAR`], {type: 'text/calendar'}))
+  a.download = 'garaj3d-memento.ics'; a.click()
 }
 
-export default function Acte({D, car, reload}) {
+export default function Acte({D, car, reload, onEdit}) {
   const [rep, setRep] = useState(false), [msg, setMsg] = useState('')
   const docs = D.docs.filter(d => d.vehicle_id === car.id).sort((a, b) => a.expires_on.localeCompare(b.expires_on))
   const logs = D.logs.filter(l => l.vehicle_id === car.id).sort((a, b) => a.date.localeCompare(b.date))
@@ -37,13 +39,13 @@ export default function Acte({D, car, reload}) {
     <div className="card"><b>Acte</b>{docs.length ? docs.map(d => <div key={d.id} className="row"><span>{d.type}</span><span>până la {dt(d.expires_on)}</span></div>) : <p className="mu">—</p>}</div>
     <div className="card"><b>Istoric service</b> · total {ron(cost)}{logs.map(l => <div key={l.id} className="row" style={{padding: '6px 0', borderBottom: '1px solid #8882'}}><span>{dt(l.date)} · {l.part_name}<br/><small className="mu">{ro(l.odometer)} km {l.brand_oem || ''}</small></span><span>{ron(Number(l.part_cost) + Number(l.labor_cost))}</span></div>)}</div></>
   return <>
-    <h2>Acte</h2>
+    
     {docs.length === 0 && <div className="card"><p className="mu">Adaugă ITP, RCA, CASCO sau Rovinietă cu butonul „+ Adaugă”.</p></div>}
     {docs.map(d => { const n = daysTo(d.expires_on), col = n > 60 ? '#10b981' : n > 14 ? '#f59e0b' : '#ef4444'
       return <div key={d.id} className="card"><div className="row"><b>{d.type}</b><span className="bd" style={{background: col}}>{n < 0 ? 'Expirat' : n + ' zile'}</span></div>
         <small className="mu">Expiră {dt(d.expires_on)} {d.policy_number ? '· Poliță ' + d.policy_number : ''}</small>
-        <div style={{marginTop: 6}}><button className="g" onClick={() => del(d.id)}>Șterge</button></div></div> })}
-    <div className="grid" style={{margin: '10px 0'}}><button className="g" disabled={!docs.length} onClick={() => ics(docs, car)}>📅 Export calendar</button><button onClick={() => setRep(true)}>📄 Raport vânzare</button></div>
+        <div className="row" style={{marginTop: 6}}><button className="g sm" onClick={() => onEdit({kind: 'doc', row: d})}>✎ Editează</button><button className="g sm" onClick={() => del(d.id)}>Șterge</button></div></div> })}
+    <div className="grid" style={{margin: '10px 0'}}><button className="g" onClick={() => ics(docs, car, D.parts.filter(p => p.vehicle_id === car.id))}>📅 Calendar (acte + service)</button><button onClick={() => setRep(true)}>📄 Raport vânzare</button></div>
     <div className="card"><b>Setări și backup</b><div className="grid" style={{marginTop: 8}}><button className="g" onClick={backup}>Exportă JSON</button><button className="g" onClick={() => document.getElementById('rf').click()}>Importă JSON</button></div>
       <input id="rf" type="file" accept=".json" hidden onChange={restore}/>{msg && <p className="mu">{msg}</p>}
       <button className="g w" style={{marginTop: 8}} onClick={() => sb.auth.signOut()}>Deconectare</button></div>
