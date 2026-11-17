@@ -21,5 +21,17 @@ Aplicatie in romana pentru intretinere auto, uzura prezisa si consum (benzina, d
 ## Modele 3D
 Vezi `public/models/CITESTE.txt`. Pozitiile punctelor pulsatorii si rotatia modelelor se ajusteaza in `src/data.js` (HOT_OVERRIDE, ROT).
 
+## Aspect
+Icoana ⚙️ din colt deschide Setari: fundal (7 teme + poza ta), culoare accent, animatii reduse. Se salveaza pe dispozitiv.
+
+## Catalog si baza de masini
+`src/catalog.js` (piese cu denumire tehnica, intervale km/luni) si `src/carsdb.js` (marci si modele cu caroserie si motorizari). Pot fi extinse prin adaugarea de randuri in aceleasi fisiere. Marcile sau modelele lipsa se pot scrie oricum manual.
+
+## Notificari
+Icoana 🔔 arata ce e de rezolvat (acte care expira, piese uzate, preturi vechi). Memento-uri reale pe telefon: tab Acte > "Calendar (acte + service)" (fisier .ics cu alerta cu 14 zile inainte). Notificari push in fundal nu sunt incluse (cer server).
+
+## VIN
+Butonul "Din VIN" foloseste serviciul public NHTSA vPIC; pentru masini europene poate returna date partiale.
+
 ## Preturi
 Se editeaza manual in tab-ul Consum (cu data ultimei modificari). Butoanele "cea mai apropiata benzinarie" deschid Google Maps.
