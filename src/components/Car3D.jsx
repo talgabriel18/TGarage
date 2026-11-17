@@ -74,8 +74,9 @@ export default function Car3D({car, parts, xray, focus, onPick}) {
   return <Canvas camera={{position: [4, 3, 5.5], fov: 45}} dpr={[1, 2]}>
     <ambientLight intensity={.8}/><directionalLight position={[3, 5, 4]} intensity={1.1}/>
     <Suspense fallback={null}>{url ? <Boundary key={url} fallback={proc}><Glb url={url} body={car.body} color={color} xray={xray}/></Boundary> : proc}</Suspense>
+    <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, .01, 0]}><ringGeometry args={[2.5, 2.56, 64]}/><meshBasicMaterial color="#ffffff" transparent opacity={.25}/></mesh>
     {parts.map(p => <Hot key={p.id} p={p} onPick={onPick}/>)}
-    <OrbitControls ref={controls} enablePan={false} minDistance={2.5} maxDistance={11} maxPolarAngle={Math.PI / 2.05}/>
+    <OrbitControls ref={controls} autoRotate={!focus} autoRotateSpeed={.7} enablePan={false} minDistance={2.5} maxDistance={11} maxPolarAngle={Math.PI / 2.05}/>
     <Rig focus={focus} controls={controls}/>
   </Canvas>
 }
