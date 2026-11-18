@@ -1,5 +1,5 @@
 import {Canvas, useFrame, useThree} from '@react-three/fiber'
-import {OrbitControls, useGLTF} from '@react-three/drei'
+import {OrbitControls, useGLTF, useTexture} from '@react-three/drei'
 import * as THREE from 'three'
 import React, {Suspense, useEffect, useMemo, useRef, useState} from 'react'
 import {BODY, ROT} from '../data'
@@ -56,15 +56,42 @@ function Hot({p, onPick}) {
   </group>
 }
 
+const Bx = ({p, s, c = '#888', r, m = 0, ro = .6, e}) => <mesh position={p} rotation={r}><boxGeometry args={s}/><meshStandardMaterial color={c} metalness={m} roughness={ro} emissive={e || '#000000'} emissiveIntensity={e ? 1 : 0}/></mesh>
+const Wrench = ({p, a = 0, l = .8}) => <group position={p} rotation={[0, 0, a]}>
+  <Bx p={[0, 0, 0]} s={[l, .07, .025]} c="#b8c0cc" m={.9} ro={.3}/>
+  {[-1, 1].map(k => <mesh key={k} position={[k * l / 2, 0, 0]}><torusGeometry args={[.07, .03, 8, 16]}/><meshStandardMaterial color="#b8c0cc" metalness={.9} roughness={.3}/></mesh>)}</group>
+const Hammer = ({p, a = 0}) => <group position={p} rotation={[0, 0, a]}><Bx p={[0, 0, 0]} s={[.07, .7, .03]} c="#8b5a2b"/><Bx p={[0, .32, 0]} s={[.3, .12, .06]} c="#444b57" m={.8} ro={.4}/></group>
+
+function GarageScene() {
+  const logo = useTexture('/logo.png'), flat = [-Math.PI / 2, 0, 0]
+  return <group>
+    <mesh rotation={flat}><planeGeometry args={[14, 14]}/><meshStandardMaterial color="#2a2d34" roughness={.5} metalness={.25}/></mesh>
+    <Bx p={[0, .01, 1.9]} s={[5.4, .01, .08]} c="#facc15"/><Bx p={[0, .01, -1.9]} s={[5.4, .01, .08]} c="#facc15"/><Bx p={[2.7, .01, 0]} s={[.08, .01, 3.8]} c="#facc15"/><Bx p={[-2.7, .01, 0]} s={[.08, .01, 3.8]} c="#facc15"/>
+    <mesh position={[0, 2.2, -4.5]}><planeGeometry args={[14, 5]}/><meshStandardMaterial color="#303646" roughness={.95}/></mesh>
+    <mesh position={[-5.5, 2.2, 0]} rotation={[0, Math.PI / 2, 0]}><planeGeometry args={[14, 5]}/><meshStandardMaterial color="#262b39" roughness={.95}/></mesh>
+    <Bx p={[0, .5, -4.47]} s={[14, 1, .04]} c="#1d2230"/><Bx p={[0, 1.02, -4.46]} s={[14, .06, .05]} c="#ff8a3d"/>
+    <Bx p={[-.6, 2.3, -4.46]} s={[4.4, 2, .04]} c="#5b4a3a" ro={.9}/>
+    {[[-2.3, .1], [-1.7, -.1], [-1.1, .15], [-.5, -.15], [.1, .1], [.7, -.1]].map(([x, a], i) => <Wrench key={i} p={[x, 2.85, -4.42]} a={Math.PI / 2 + a} l={.75 + (i % 3) * .1}/>)}
+    {[-2.2, -1.4, -.6, .2, 1].map((x, i) => <Hammer key={i} p={[x, 1.85, -4.42]} a={i % 2 ? .08 : -.08}/>)}
+    <Bx p={[2.7, 3.2, -4.46]} s={[1.5, 1.3, .05]} c="#ffffff"/>
+    <mesh position={[2.7, 3.2, -4.43]}><planeGeometry args={[1.35, 1.15]}/><meshBasicMaterial map={logo} toneMapped={false}/></mesh>
+    <Bx p={[3.2, .95, -4]} s={[2.2, .1, .9]} c="#7a5b3a"/>
+    {[[2.2, -3.7], [4.2, -3.7], [2.2, -4.3], [4.2, -4.3]].map(([x, z], i) => <Bx key={i} p={[x, .45, z]} s={[.08, .9, .08]} c="#2b303c"/>)}
+    <Bx p={[3.2, .3, -4]} s={[2, .06, .8]} c="#2b303c"/><Bx p={[3.9, 1.18, -4.1]} s={[.6, .36, .38]} c="#c8102e" ro={.4}/><Bx p={[3, 1.08, -3.85]} s={[.22, .16, .2]} c="#4b5563" m={.8}/>
+    <mesh position={[2.5, 1.15, -4]}><cylinderGeometry args={[.1, .12, .3, 16]}/><meshStandardMaterial color="#d9a400"/></mesh>
+    <Bx p={[-3.6, .55, -3.7]} s={[1.1, 1.1, .6]} c="#c8102e" ro={.35}/><Bx p={[-3.6, 1.13, -3.7]} s={[1.14, .05, .64]} c="#374151" m={.6}/>
+    {[.2, .45, .7, .95].map((y, i) => <group key={i}><Bx p={[-3.6, y, -3.39]} s={[.98, .02, .02]} c="#111111"/><Bx p={[-3.6, y + .08, -3.38]} s={[.3, .03, .03]} c="#d1d5db" m={1} ro={.2}/></group>)}
+    {[.14, .42, .7].map((y, i) => <mesh key={i} position={[-4.6, y, -1.6]} rotation={flat}><torusGeometry args={[.34, .14, 12, 24]}/><meshStandardMaterial color="#15171c" roughness={.9}/></mesh>)}
+    {[[4.6, -2.6, '#1d4ed8'], [4.1, -3.2, '#b91c1c']].map(([x, z, c], i) => <group key={i}><mesh position={[x, .5, z]}><cylinderGeometry args={[.32, .32, 1, 20]}/><meshStandardMaterial color={c} metalness={.5} roughness={.5}/></mesh>
+      {[.25, .75].map(y => <mesh key={y} position={[x, y, z]} rotation={flat}><torusGeometry args={[.325, .015, 6, 20]}/><meshStandardMaterial color="#222222"/></mesh>)}</group>)}
+    {Array.from({length: 14}, (_, i) => <Bx key={i} p={[-5.46, .2 + i * .33, 1]} s={[.05, .3, 4.6]} c={i % 2 ? '#9aa0ab' : '#8d939e'} m={.6} ro={.5}/>)}
+    {[-2.5, 0, 2.5].map(x => <group key={x}><Bx p={[x, 4.4, -2]} s={[1.6, .06, .3]} c="#fff6d8" e="#fff6d8"/><pointLight position={[x, 4, -2]} intensity={.55} distance={9} color="#fff1cf"/></group>)}
+  </group>
+}
+
 function Stage({kind}) {
   const flat = [-Math.PI / 2, 0, 0]
-  if (kind === 'garaj') return <group>
-    <mesh rotation={flat}><planeGeometry args={[14, 14]}/><meshStandardMaterial color="#1b1f2a" roughness={.35} metalness={.4}/></mesh>
-    <mesh position={[0, 2.2, -4.5]}><planeGeometry args={[14, 5]}/><meshStandardMaterial color="#232838" roughness={.9}/></mesh>
-    <mesh position={[-5.5, 2.2, 0]} rotation={[0, Math.PI / 2, 0]}><planeGeometry args={[14, 5]}/><meshStandardMaterial color="#1e2230" roughness={.9}/></mesh>
-    <mesh position={[0, .9, -4.48]}><boxGeometry args={[14, .08, .02]}/><meshBasicMaterial color="#ff8a3d"/></mesh>
-    {[-2.5, 0, 2.5].map(x => <group key={x}><mesh position={[x, 4.4, -2]}><boxGeometry args={[1.6, .06, .3]}/><meshBasicMaterial color="#fff6d8"/></mesh><pointLight position={[x, 4, -2]} intensity={.5} distance={9} color="#fff1cf"/></group>)}
-  </group>
+  if (kind === 'garaj') return <GarageScene/>
   if (kind === 'neon') return <group>
     <gridHelper args={[14, 28, '#38bdf8', '#1e3a5f']} position={[0, .002, 0]}/>
     <mesh rotation={flat} position={[0, .01, 0]}><ringGeometry args={[2.5, 2.6, 64]}/><meshBasicMaterial color="#38bdf8"/></mesh>
@@ -100,7 +127,7 @@ export default function Car3D({car, parts, xray, focus, onPick, stage}) {
   return <Canvas camera={{position: [4, 3, 5.5], fov: 45}} dpr={[1, 2]}>
     <ambientLight intensity={.8}/><directionalLight position={[3, 5, 4]} intensity={1.1}/>
     <Suspense fallback={null}>{url ? <Boundary key={url} fallback={proc}><Glb url={url} body={car.body} color={color} xray={xray}/></Boundary> : proc}</Suspense>
-    <Stage kind={stage}/>
+    <Suspense fallback={null}><Stage kind={stage}/></Suspense>
     {parts.map(p => <Hot key={p.id} p={p} onPick={onPick}/>)}
     <OrbitControls ref={controls} autoRotate={!focus} autoRotateSpeed={.7} enablePan={false} minDistance={2.5} maxDistance={11} maxPolarAngle={Math.PI / 2.05}/>
     <Rig focus={focus} controls={controls}/>
