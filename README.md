@@ -36,5 +36,11 @@ Butonul "Din VIN" foloseste serviciul public NHTSA vPIC; pentru masini europene 
 ## Cheltuieli, calculator, rezumat, CSV
 Pentru cheltuieli generale ruleaza o singura data `supabase/migration-v7.sql` in Supabase (SQL Editor). Restul (calculator de drum, "Anul tau in cifre", import/export CSV) nu cer nimic in plus.
 
+## Logo si scene
+Logo-ul e in `public/logo.png` si `public/icon-*.png` (inlocuieste-le cu un PNG mai mare pentru claritate maxima). Scena 3D (Studio, Garaj, Neon) se alege din Setari.
+
+## Cont
+Tab-ul Cont: profil (nume, poza/emoji), email, parola, 2FA (TOTP), tema. 2FA se ceruta la autentificare in aplicatie. Parola uitata: link pe email.
+
 ## Preturi
 Se editeaza manual in tab-ul Consum (cu data ultimei modificari). Butoanele "cea mai apropiata benzinarie" deschid Google Maps.
