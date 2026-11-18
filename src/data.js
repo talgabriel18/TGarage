@@ -26,3 +26,4 @@ export const posFor = (body, key) => (HOT_OVERRIDE[body] && HOT_OVERRIDE[body][k
 
 // Piese urmărite implicit la mașină nouă (restul se adaugă din catalog)
 export const template = t => forType(t).filter(c => c.def).map(({name, category, hot, life_km, life_months}) => ({name, category, hot, life_km, life_months}))
+export const EXP_CATS = ['Asigurare', 'Parcare', 'Spălătorie', 'Taxe și impozit', 'Taxe drum', 'Amenzi', 'Altele']

@@ -15,7 +15,7 @@ import {computeAlerts} from './lib/alerts'
 
 const TABS = [['🚗', 'Garaj 3D'], ['🔧', 'Piese & AI'], ['⛽', 'Consum'], ['📄', 'Acte']]
 const T = ['vehicles', 'vehicle_parts', 'maintenance_logs', 'fuel_logs', 'documents', 'prices']
-const empty = {cars: [], parts: [], logs: [], fuel: [], docs: [], prices: DEFAULT_PRICES, pdates: {}, raw: {}, uid: null}
+const empty = {cars: [], parts: [], logs: [], fuel: [], docs: [], prices: DEFAULT_PRICES, pdates: {}, raw: {}, exp: [], expOk: true, uid: null}
 
 export default function App() {
   const [s, setS] = useState(null), [ready, setReady] = useState(false), [D, setD] = useState(empty)
@@ -27,10 +27,11 @@ export default function App() {
   }, [])
   const load = useCallback(async pick => {
     const r = await Promise.all(T.map(x => sb.from(x).select('*').order('created_at')))
+    const ex = await sb.from('expenses').select('*').order('created_at')
     if (r.some(x => x.error)) { setErr(r.find(x => x.error).error.message); return }
     const [cars, parts, logs, fuel, docs, pr] = r.map(x => x.data), prices = {...DEFAULT_PRICES}, pdates = {}
     pr.forEach(x => { prices[x.key] = Number(x.price); pdates[x.key] = x.updated_at })
-    setD({cars, parts, logs, fuel, docs, prices, pdates, raw: Object.fromEntries(T.map((x, i) => [x, r[i].data])), uid: s?.user?.id})
+    setD({cars, parts, logs, fuel, docs, prices, pdates, exp: ex.error ? [] : ex.data, expOk: !ex.error, raw: {...Object.fromEntries(T.map((x, i) => [x, r[i].data])), ...(ex.error ? {} : {expenses: ex.data})}, uid: s?.user?.id})
     setCarId(cur => pick === null ? null : pick || (cars.find(c => c.id === cur) ? cur : cars[0]?.id || null))
   }, [s])
   useEffect(() => { if (s) load() }, [s])
