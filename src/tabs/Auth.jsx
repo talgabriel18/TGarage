@@ -10,7 +10,7 @@ export default function Auth() {
     if (r.error) setMsg(r.error.message)
     else if (mode === 'up' && !r.data.session) setMsg('Cont creat. Confirmă emailul, apoi intră.')
   }
-  return <main><h2>Garaj 3D</h2><div className="card">
+  return <main><h2>TGarage</h2><div className="card">
     <input type="email" placeholder="Email" value={em} onChange={e => setEm(e.target.value)}/>
     <input type="password" placeholder="Parolă (min. 6 caractere)" value={pw} onChange={e => setPw(e.target.value)}/>
     <motion.button whileTap={{scale: .96}} className="w" style={{marginTop: 8}} onClick={go}>{mode === 'in' ? 'Intră' : 'Creează cont'}</motion.button>
