@@ -33,5 +33,8 @@ Icoana 🔔 arata ce e de rezolvat (acte care expira, piese uzate, preturi vechi
 ## VIN
 Butonul "Din VIN" foloseste serviciul public NHTSA vPIC; pentru masini europene poate returna date partiale.
 
+## Cheltuieli, calculator, rezumat, CSV
+Pentru cheltuieli generale ruleaza o singura data `supabase/migration-v7.sql` in Supabase (SQL Editor). Restul (calculator de drum, "Anul tau in cifre", import/export CSV) nu cer nimic in plus.
+
 ## Preturi
 Se editeaza manual in tab-ul Consum (cu data ultimei modificari). Butoanele "cea mai apropiata benzinarie" deschid Google Maps.
