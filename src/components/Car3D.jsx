@@ -43,10 +43,36 @@ function Glb({url, body, color, xray}) {
 }
 
 function Hot({p, onPick}) {
-  const r = useRef()
-  useFrame(({clock}) => r.current.scale.setScalar(1 + .35 * Math.sin(clock.elapsedTime * 3 + p.pos[0] * 2)))
-  return <mesh ref={r} position={p.pos} onClick={e => { e.stopPropagation(); onPick(p) }}>
-    <sphereGeometry args={[.14, 16, 16]}/><meshBasicMaterial color={p.col}/></mesh>
+  const r = useRef(), w = useRef()
+  useFrame(({clock}) => {
+    const t = clock.elapsedTime
+    r.current.scale.setScalar(1 + .35 * Math.sin(t * 3 + p.pos[0] * 2))
+    const k = (t * .8 + p.pos[0]) % 1
+    w.current.scale.setScalar(1 + k * 2.2); w.current.material.opacity = .5 * (1 - k)
+  })
+  return <group position={p.pos}>
+    <mesh ref={r} onClick={e => { e.stopPropagation(); onPick(p) }}><sphereGeometry args={[.14, 16, 16]}/><meshBasicMaterial color={p.col}/></mesh>
+    <mesh ref={w} raycast={() => null}><sphereGeometry args={[.14, 12, 12]}/><meshBasicMaterial color={p.col} transparent opacity={.5} depthWrite={false}/></mesh>
+  </group>
+}
+
+function Stage({kind}) {
+  const flat = [-Math.PI / 2, 0, 0]
+  if (kind === 'garaj') return <group>
+    <mesh rotation={flat}><planeGeometry args={[14, 14]}/><meshStandardMaterial color="#1b1f2a" roughness={.35} metalness={.4}/></mesh>
+    <mesh position={[0, 2.2, -4.5]}><planeGeometry args={[14, 5]}/><meshStandardMaterial color="#232838" roughness={.9}/></mesh>
+    <mesh position={[-5.5, 2.2, 0]} rotation={[0, Math.PI / 2, 0]}><planeGeometry args={[14, 5]}/><meshStandardMaterial color="#1e2230" roughness={.9}/></mesh>
+    <mesh position={[0, .9, -4.48]}><boxGeometry args={[14, .08, .02]}/><meshBasicMaterial color="#ff8a3d"/></mesh>
+    {[-2.5, 0, 2.5].map(x => <group key={x}><mesh position={[x, 4.4, -2]}><boxGeometry args={[1.6, .06, .3]}/><meshBasicMaterial color="#fff6d8"/></mesh><pointLight position={[x, 4, -2]} intensity={.5} distance={9} color="#fff1cf"/></group>)}
+  </group>
+  if (kind === 'neon') return <group>
+    <gridHelper args={[14, 28, '#38bdf8', '#1e3a5f']} position={[0, .002, 0]}/>
+    <mesh rotation={flat} position={[0, .01, 0]}><ringGeometry args={[2.5, 2.6, 64]}/><meshBasicMaterial color="#38bdf8"/></mesh>
+  </group>
+  return <group>
+    <mesh rotation={flat} position={[0, .005, 0]}><circleGeometry args={[3.2, 64]}/><meshStandardMaterial color="#232a3b" roughness={.25} metalness={.6}/></mesh>
+    <mesh rotation={flat} position={[0, .01, 0]}><ringGeometry args={[2.5, 2.56, 64]}/><meshBasicMaterial color="#ffffff" transparent opacity={.3}/></mesh>
+  </group>
 }
 
 function Rig({focus, controls}) {
@@ -62,7 +88,7 @@ function Rig({focus, controls}) {
   return null
 }
 
-export default function Car3D({car, parts, xray, focus, onPick}) {
+export default function Car3D({car, parts, xray, focus, onPick, stage}) {
   const controls = useRef(), [url, setUrl] = useState(null)
   const color = car.color || '#35507a'
   useEffect(() => {
@@ -74,7 +100,7 @@ export default function Car3D({car, parts, xray, focus, onPick}) {
   return <Canvas camera={{position: [4, 3, 5.5], fov: 45}} dpr={[1, 2]}>
     <ambientLight intensity={.8}/><directionalLight position={[3, 5, 4]} intensity={1.1}/>
     <Suspense fallback={null}>{url ? <Boundary key={url} fallback={proc}><Glb url={url} body={car.body} color={color} xray={xray}/></Boundary> : proc}</Suspense>
-    <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, .01, 0]}><ringGeometry args={[2.5, 2.56, 64]}/><meshBasicMaterial color="#ffffff" transparent opacity={.25}/></mesh>
+    <Stage kind={stage}/>
     {parts.map(p => <Hot key={p.id} p={p} onPick={onPick}/>)}
     <OrbitControls ref={controls} autoRotate={!focus} autoRotateSpeed={.7} enablePan={false} minDistance={2.5} maxDistance={11} maxPolarAngle={Math.PI / 2.05}/>
     <Rig focus={focus} controls={controls}/>

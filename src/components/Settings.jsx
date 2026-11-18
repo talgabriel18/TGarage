@@ -12,6 +12,8 @@ export default function Settings({th, setTh, setImg, onClose}) {
         <label className={'tile' + (th.id === 'custom' ? ' on' : '')} style={{background: 'var(--gbtn)'}}>📷 Poza mea
           <input type="file" accept="image/*" hidden onChange={async e => { const f = e.target.files[0]; if (f) { setImg(await fileToBg(f)); setTh({id: 'custom'}) } }}/></label>
       </div>
+      <b style={{display: 'block', marginTop: 16}}>Scena 3D</b>
+      <div className="chips">{[['studio', '🎬 Studio'], ['garaj', '🏠 Garaj'], ['neon', '🌃 Neon']].map(([k, l]) => <button key={k} className={(th.stage || 'studio') === k ? 'on' : 'g'} onClick={() => setTh({stage: k})}>{l}</button>)}</div>
       <b style={{display: 'block', marginTop: 16}}>Culoare accent</b>
       <div className="row" style={{justifyContent: 'flex-start', flexWrap: 'wrap', margin: '8px 0'}}>
         <button className="g sm" onClick={() => setTh({acc: null})}>Implicit</button>

@@ -2,7 +2,7 @@ import {useEffect, useState} from 'react'
 import {motion} from 'framer-motion'
 import {ro, ron, dt} from '../lib/util'
 
-function Num({v, f = ro}) {
+export function Num({v, f = ro}) {
   const [x, setX] = useState(0)
   useEffect(() => {
     let r, t0
