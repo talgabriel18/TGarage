@@ -1,4 +1,4 @@
-# Garaj 3D
+# TGarage
 Aplicatie in romana pentru intretinere auto, uzura prezisa si consum (benzina, diesel, GPL, hibrid, PHEV, electric). Date in cloud (Supabase), pe mai multe masini.
 
 ## Test local (laptop)
