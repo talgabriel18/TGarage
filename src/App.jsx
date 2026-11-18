@@ -10,6 +10,7 @@ import Consum from './tabs/Consum'
 import Acte from './tabs/Acte'
 import AddSheet from './components/AddSheet'
 import Settings from './components/Settings'
+import Splash from './components/Splash'
 import Alerts from './components/Alerts'
 import {computeAlerts} from './lib/alerts'
 
@@ -17,9 +18,11 @@ const TABS = [['🚗', 'Garaj 3D'], ['🔧', 'Piese & AI'], ['⛽', 'Consum'], [
 const T = ['vehicles', 'vehicle_parts', 'maintenance_logs', 'fuel_logs', 'documents', 'prices']
 const empty = {cars: [], parts: [], logs: [], fuel: [], docs: [], prices: DEFAULT_PRICES, pdates: {}, raw: {}, exp: [], expOk: true, uid: null}
 
+const greet = () => { const h = new Date().getHours(); return h < 5 ? 'Noapte bună' : h < 12 ? 'Bună dimineața' : h < 18 ? 'Bună ziua' : 'Bună seara' }
+
 export default function App() {
   const [s, setS] = useState(null), [ready, setReady] = useState(false), [D, setD] = useState(empty)
-  const [carId, setCarId0] = useState(() => { try { return localStorage.getItem('tgarage.car') } catch { return null } }), [tab, setTab] = useState(0), [add, setAdd] = useState(false), [edit, setEdit] = useState(null), [cfg, setCfg] = useState(false), [al, setAl] = useState(false), [toast, setToast] = useState(''), [err, setErr] = useState('')
+  const [carId, setCarId0] = useState(() => { try { return localStorage.getItem('tgarage.car') } catch { return null } }), [tab, setTab] = useState(0), [add, setAdd] = useState(false), [edit, setEdit] = useState(null), [cfg, setCfg] = useState(false), [loaded, setLoaded] = useState(false), [al, setAl] = useState(false), [toast, setToast] = useState(''), [err, setErr] = useState('')
   const {th, setTh, img, setImg, t} = useTheme()
   const setCarId = v => setCarId0(cur => { const n = typeof v === 'function' ? v(cur) : v; try { if (n) localStorage.setItem('tgarage.car', n); else localStorage.removeItem('tgarage.car') } catch {} return n })
   useEffect(() => {
@@ -33,6 +36,7 @@ export default function App() {
     const [cars, parts, logs, fuel, docs, pr] = r.map(x => x.data), prices = {...DEFAULT_PRICES}, pdates = {}
     pr.forEach(x => { prices[x.key] = Number(x.price); pdates[x.key] = x.updated_at })
     setD({cars, parts, logs, fuel, docs, prices, pdates, exp: ex.error ? [] : ex.data, expOk: !ex.error, raw: {...Object.fromEntries(T.map((x, i) => [x, r[i].data])), ...(ex.error ? {} : {expenses: ex.data})}, uid: s?.user?.id})
+    setLoaded(true)
     setCarId(cur => pick === null ? null : pick || (cars.find(c => c.id === cur) ? cur : cars[0]?.id || null))
   }, [s])
   useEffect(() => { if (s) load() }, [s])
@@ -46,19 +50,20 @@ export default function App() {
   const custom = th.id === 'custom' && img
   const bg = <div className="bg" style={{background: custom ? `linear-gradient(rgba(0,0,0,.5),rgba(0,0,0,.5)),url(${img}) center/cover` : t.bg}}>
     {!custom && t.blobs && t.blobs.map((c, i) => <i key={i} className="blob" style={{background: c, left: ['-10%', '45%', '15%'][i], top: ['5%', '35%', '65%'][i], animationDelay: `${i * -7}s`}}/>)}</div>
-  if (!ready) return bg
+  if (!ready) return <>{bg}<Splash/></>
   if (!s) return <MotionConfig reducedMotion={th.calm ? 'always' : 'never'}>{bg}<Auth/></MotionConfig>
+  if (!loaded && !err) return <>{bg}<Splash/></>
   const car = D.cars.find(c => c.id === carId) || D.cars[0]
   const parts = car ? D.parts.filter(p => p.vehicle_id === car.id) : []
   const flash = m => { setToast(m); setTimeout(() => setToast(''), 2200) }
   const reload = async p => { await load(p); flash('Actualizat ✓') }
   const alerts = computeAlerts(D)
-  const props = {D, car, reload, setCar: setCarId, onEdit: setEdit}
+  const props = {D, car, reload, setCar: setCarId, onEdit: setEdit, stage: th.stage || 'studio'}
   const page = tab === 0 || !car ? <Garage {...props}/> : [null, <Parts {...props}/>, <Consum {...props}/>, <Acte {...props}/>][tab]
   const closeAdd = () => { setAdd(false); setEdit(null) }
   return <MotionConfig reducedMotion={th.calm ? 'always' : 'never'}>
     {bg}
-    <header className="top"><div><small className="mu">{car ? `${car.brand} ${car.model || ''}` : 'Bun venit'}</small><h1>{TABS[tab][1]}</h1></div>
+    <header className="top"><div style={{display: 'flex', gap: 12, alignItems: 'center'}}><img src="/logo.png" className="logo" alt="TGarage"/><div><small className="mu">{greet()}{car ? ` · ${car.brand} ${car.model || ''}` : ''}</small><h1>{TABS[tab][1]}</h1></div></div>
       <div style={{display: 'flex', gap: 8}}><motion.button className="icon" whileTap={{scale: .85}} onClick={() => setAl(true)} aria-label="Notificări">🔔{alerts.length > 0 && <i className="badge">{alerts.length}</i>}</motion.button><motion.button className="icon" whileTap={{scale: .85, rotate: 60}} onClick={() => setCfg(true)} aria-label="Setări">⚙️</motion.button></div></header>
     <main>{err && <p style={{color: 'var(--ur)'}}>Eroare: {err}. Ai rulat schema.sql în Supabase?</p>}
       <AnimatePresence mode="wait"><motion.div className="page" key={tab} initial={{opacity: 0, y: 24}} animate={{opacity: 1, y: 0}} exit={{opacity: 0}} transition={{type: 'spring', stiffness: 260, damping: 26}}>{page}</motion.div></AnimatePresence></main>
