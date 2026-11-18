@@ -23,7 +23,7 @@ export default function Consum({D, car, reload, onEdit}) {
   const fuel = D.fuel.filter(x => x.vehicle_id === car.id), logs = D.logs.filter(x => x.vehicle_id === car.id)
   const months = {}; fuel.forEach(x => { const k = x.date.slice(0, 7); months[k] = (months[k] || 0) + Number(x.total_cost) })
   const sumF = fuel.reduce((s, x) => s + Number(x.total_cost), 0), sumS = logs.reduce((s, x) => s + Number(x.part_cost) + Number(x.labor_cost), 0)
-  const exps = (D.exp || []).filter(x => x.vehicle_id === car.id), sumE = exps.reduce((s, x) => s + Number(x.amount), 0), tot = sumF + sumS + sumE
+  const exps = (D.exp || []).filter(x => x.vehicle_id === car.id), sumE = exps.reduce((s, x) => s + Number(x.amount), 0), grand = sumF + sumS + sumE
   const odos = fuel.map(x => x.odometer).concat(logs.map(x => x.odometer)).filter(Boolean), kmR = odos.length > 1 ? Math.max(...odos) - Math.min(...odos) : 0
   const dts = fuel.map(x => x.date).concat(logs.map(x => x.date), exps.map(x => x.date)).sort(), mo = dts.length ? Math.max(1, (Date.now() - new Date(dts[0])) / 2.63e9) : 1
   const ms = Object.entries(months).sort().slice(-6), mx = Math.max(1, ...ms.map(m => m[1]))
@@ -41,10 +41,10 @@ export default function Consum({D, car, reload, onEdit}) {
     <div className="card"><b>Cost lunar</b>{ms.length === 0 ? <p className="mu">Fără date încă.</p> : <div style={{display: 'flex', alignItems: 'end', gap: 8, height: 110, marginTop: 8}}>
       {ms.map(([k, v]) => <div key={k} style={{flex: 1, textAlign: 'center'}}><div style={{height: Math.max(4, v / mx * 80), background: 'var(--ac)', borderRadius: 8}}/><small>{Math.round(v)}</small><br/><small className="mu">{k.slice(5)}</small></div>)}</div>}</div>
     <div className="card"><b>💰 Cost total de deținere</b>
-      <div className="grid" style={{marginTop: 8}}><div><div className="big">{ron(tot / mo)}</div><small className="mu">pe lună</small></div><div><div className="big">{kmR > 0 ? ron(tot / kmR) : '—'}</div><small className="mu">pe km</small></div></div>
-      <div style={{display: 'flex', height: 10, borderRadius: 6, overflow: 'hidden', marginTop: 10, background: 'var(--gbtn)'}}>{[[sumF, 'var(--ac)'], [sumS, '#f59e0b'], [sumE, '#a78bfa']].map(([v, c], i) => <i key={i} style={{width: `${tot ? v / tot * 100 : 0}%`, background: c}}/>)}</div>
+      <div className="grid" style={{marginTop: 8}}><div><div className="big">{ron(grand / mo)}</div><small className="mu">pe lună</small></div><div><div className="big">{kmR > 0 ? ron(grand / kmR) : '—'}</div><small className="mu">pe km</small></div></div>
+      <div style={{display: 'flex', height: 10, borderRadius: 6, overflow: 'hidden', marginTop: 10, background: 'var(--gbtn)'}}>{[[sumF, 'var(--ac)'], [sumS, '#f59e0b'], [sumE, '#a78bfa']].map(([v, c], i) => <i key={i} style={{width: `${grand ? v / grand * 100 : 0}%`, background: c}}/>)}</div>
       <div className="row" style={{marginTop: 6, flexWrap: 'wrap'}}><small><b style={{color: 'var(--ac)'}}>●</b> {ev ? 'Încărcare' : 'Combustibil'} {ron(sumF)}</small><small><b style={{color: '#f59e0b'}}>●</b> Service {ron(sumS)}</small><small><b style={{color: '#a78bfa'}}>●</b> Altele {ron(sumE)}</small></div>
-      <small className="mu">Total {ron(tot)} de la prima înregistrare</small></div>
+      <small className="mu">Total {ron(grand)} de la prima înregistrare</small></div>
     <div className="card"><b>Prețuri la Zi (RON)</b>
       {priceKeys(car.powertrain).map(k => <div key={k} className="row"><span>{k}<br/><small className="mu">{D.pdates[k] ? (old(k) ? '⚠ vechi: ' : 'actualizat ') + dt(D.pdates[k]) : 'valoare implicită'}</small></span>
         <input style={{width: 100}} type="number" step="0.01" defaultValue={D.prices[k]} key={D.prices[k]} onBlur={e => save(k, e.target.value)}/></div>)}</div>
