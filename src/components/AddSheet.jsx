@@ -2,7 +2,7 @@ import {useState} from 'react'
 import {motion} from 'framer-motion'
 import {supabase as sb} from '../lib/supabase'
 import {upload} from '../lib/media'
-import {CATS, DEFAULT_PRICES, fuelKey} from '../data'
+import {CATS, DEFAULT_PRICES, EXP_CATS, fuelKey} from '../data'
 import {today, durata} from '../lib/util'
 import {search, estimate} from '../catalog'
 
@@ -10,9 +10,10 @@ export default function AddSheet({D, car, parts, tab, edit, onClose, onSaved}) {
   const ev = car.powertrain === 'Electric', phev = car.powertrain === 'PHEV', row = edit?.row
   const [kind, setKind] = useState(edit?.kind || (tab === 2 ? 'fuel' : tab === 3 ? 'doc' : 'service'))
   const init = () => {
-    if (!edit) return {date: today(), odo: car.odometer, part: parts[0]?.id || 'new', cat: CATS[0], lk: 20000, ly: 2, lm: 0, unit: ev ? 'kWh' : 'L', full: true, type: 'ITP', pu: ''}
+    if (!edit) return {date: today(), odo: car.odometer, part: parts[0]?.id || 'new', cat: CATS[0], lk: 20000, ly: 2, lm: 0, unit: ev ? 'kWh' : 'L', full: true, type: 'ITP', pu: '', ecat: EXP_CATS[0], amt: ''}
     if (edit.kind === 'service') return {date: row.date, odo: row.odometer, pname: row.part_name, oem: row.brand_oem || '', pc: row.part_cost, lc: row.labor_cost, notes: row.notes || ''}
     if (edit.kind === 'fuel') return {date: row.date, odo: row.odometer, q: row.quantity, pu: row.price_per_unit, station: row.station || '', full: row.full_tank, unit: row.unit}
+    if (edit.kind === 'expense') return {date: row.date, ecat: row.category, amt: row.amount, enote: row.note || ''}
     if (edit.kind === 'doc') return {type: row.type, pol: row.policy_number || '', exp: row.expires_on}
     return {pname: row.name, cat: row.category || CATS[0], lk: row.life_km, ly: Math.floor((row.life_months || 0) / 12), lm: (row.life_months || 0) % 12, lo: row.last_odo, ld: row.last_date}
   }
@@ -57,6 +58,11 @@ export default function AddSheet({D, car, parts, tab, edit, onClose, onSaved}) {
         const r = {type: f.type, policy_number: f.pol, expires_on: f.exp}
         ok(edit ? await sb.from('documents').update(r).eq('id', row.id) : await sb.from('documents').insert({...r, vehicle_id: car.id}))
       }
+      if (kind === 'expense') {
+        if (!(+f.amt > 0)) throw new Error('Completează suma')
+        const r = {date: f.date, category: f.ecat, amount: +f.amt, note: f.enote}
+        ok(edit ? await sb.from('expenses').update(r).eq('id', row.id) : await sb.from('expenses').insert({...r, vehicle_id: car.id}))
+      }
       if (kind === 'part') ok(await sb.from('vehicle_parts').update({name: f.pname, category: f.cat, life_km: +f.lk || 1, life_months: total || null, last_odo: +f.lo || 0, last_date: f.ld || today()}).eq('id', row.id))
       if ((kind === 'service' || kind === 'fuel') && odo > car.odometer) await sb.from('vehicles').update({odometer: odo}).eq('id', car.id)
       await onSaved()
@@ -68,7 +74,7 @@ export default function AddSheet({D, car, parts, tab, edit, onClose, onSaved}) {
     <div className="bk" onClick={onClose}/>
     <motion.div className="sheet" initial={{y: '100%'}} animate={{y: 0}} transition={{type: 'spring', stiffness: 260, damping: 28}}>
       <div className="row"><h2>{title}</h2><button className="g" onClick={onClose}>✕</button></div>
-      {!edit && <div className="chips">{[['service', 'Service'], ['fuel', ev ? 'Încărcare' : 'Alimentare'], ['doc', 'Act']].map(([k, l]) => <button key={k} className={kind === k ? 'on' : 'g'} onClick={() => setKind(k)}>{l}</button>)}</div>}
+      {!edit && <div className="chips">{[['service', 'Service'], ['fuel', ev ? 'Încărcare' : 'Alimentare'], ['doc', 'Act'], ['expense', 'Cheltuială']].map(([k, l]) => <button key={k} className={kind === k ? 'on' : 'g'} onClick={() => setKind(k)}>{l}</button>)}</div>}
       {(kind === 'service' || kind === 'fuel') && <div className="grid"><input type="date" {...I('date')}/><input type="number" placeholder="Km" {...I('odo')}/></div>}
       {kind === 'service' && <>
         {edit ? <input placeholder="Piesă" {...I('pname')}/> : <select value={f.part} onChange={e => set('part', e.target.value)}>{parts.map(p => <option key={p.id} value={p.id}>{p.name}</option>)}<option value="new">＋ Altă piesă din catalog…</option></select>}
@@ -83,6 +89,7 @@ export default function AddSheet({D, car, parts, tab, edit, onClose, onSaved}) {
         <div className="grid"><input type="number" step="0.01" placeholder={unit} {...I('q')}/><input type="number" step="0.01" placeholder={`Preț/${unit} (implicit ${defPrice})`} {...I('pu')}/></div>
         <input placeholder="Stație (opțional)" {...I('station')}/>
         <label className="row"><span>{ev ? 'Încărcare completă' : 'Plin complet'}</span><input type="checkbox" style={{width: 26}} checked={!!f.full} onChange={e => set('full', e.target.checked)}/></label></>}
+      {kind === 'expense' && <><input type="date" {...I('date')}/><select {...I('ecat')}>{EXP_CATS.map(c => <option key={c}>{c}</option>)}</select><input type="number" step="0.01" placeholder="Sumă (RON)" {...I('amt')}/><input placeholder="Notă (opțional)" {...I('enote')}/></>}
       {kind === 'doc' && <>
         <select {...I('type')}>{['ITP', 'RCA', 'CASCO', 'Rovinieta'].map(t => <option key={t}>{t}</option>)}</select>
         <input placeholder="Număr poliță (opțional)" {...I('pol')}/>
