@@ -11,6 +11,8 @@ export function computeAlerts(D) {
       const w = wear(p, c)
       if (w.pct < .25) out.push({id: 'p' + p.id, sev: w.pct < .1 ? 2 : 1, icon: '🔧', title: `${p.name} · ${n}`, text: `~${ro(Math.round(w.rem))} km sau ${durata(w.luni)} rămase`})
     })
+    const last = [...D.fuel, ...D.logs].filter(x => x.vehicle_id === c.id).map(x => x.date).sort().pop()
+    if (last) { const g = Math.floor((Date.now() - new Date(last)) / 864e5); if (g > 45) out.push({id: 'k' + c.id, sev: 0, icon: '📍', title: n, text: `Ultima înregistrare acum ${g} zile. Actualizează kilometrii.`}) }
     if ((m >= 10 && m <= 11) || (m >= 3 && m <= 4)) out.push({id: 'a' + c.id + m, sev: 0, icon: '🛞', title: n, text: m >= 10 ? 'Sezon rece: verifică anvelopele de iarnă' : 'Sezon cald: verifică anvelopele de vară'})
   })
   Object.entries(D.pdates).forEach(([k, d]) => { if ((Date.now() - new Date(d)) / 864e5 > 14) out.push({id: 'pr' + k, sev: 0, icon: '⛽', title: `Preț ${k}`, text: 'Nu a fost actualizat de peste 14 zile'}) })
