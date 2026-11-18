@@ -38,7 +38,7 @@ export default function App() {
     try {
       if (!s || typeof Notification === 'undefined' || Notification.permission !== 'granted') return
       const a = computeAlerts(D).filter(x => x.sev > 0), k = new Date().toDateString()
-      if (a.length && localStorage.getItem('garaj3d.notified') !== k) { localStorage.setItem('garaj3d.notified', k); new Notification('Garaj 3D', {body: `${a.length} lucruri de rezolvat la mașinile tale`}) }
+      if (a.length && localStorage.getItem('garaj3d.notified') !== k) { localStorage.setItem('garaj3d.notified', k); new Notification('TGarage', {body: `${a.length} lucruri de rezolvat la mașinile tale`}) }
     } catch {}
   }, [D, s])
   const custom = th.id === 'custom' && img

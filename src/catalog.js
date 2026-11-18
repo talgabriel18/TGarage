@@ -84,4 +84,12 @@ Tratament antiruginizare / ceară cavități|C|60000|36|caroserie|A`
 export const CATALOG = RAW.split('\n').map(l => { const [name, c, km, mo, hot, t] = l.split('|'); return {name, category: CAT_NAMES[c], life_km: +km, life_months: +mo, hot, tags: t.replace('*', ''), def: t.includes('*')} })
 const LET = {'Benzină': 'AXB', Diesel: 'AXD', GPL: 'AXBG', Hibrid: 'AXBH', PHEV: 'AXBHP', Electric: 'AEH'}
 export const forType = t => CATALOG.filter(c => [...c.tags].some(x => (LET[t] || LET['Benzină']).includes(x)))
+const CD = {M: [120000, 72], L: [30000, 24], F: [50000, 48], S: [100000, 84], B: [80000, 60], A: [50000, 60], T: [120000, 96], K: [60000, 48], I: [40000, 36], X: [150000, 96], C: [100000, 72]}
+export function estimate(name, category) {
+  const w = norm(name).split(/\s+/).filter(x => x.length > 2); let best = null, bs = 0
+  CATALOG.forEach(c => { const n = norm(c.name), s = w.filter(x => n.includes(x)).length; if (s > bs) { bs = s; best = c } })
+  if (best && bs >= Math.max(1, Math.ceil(w.length / 2))) return {km: best.life_km, mo: best.life_months, note: `Estimat după „${best.name}” din catalog (valori orientative, nu sursă oficială).`}
+  const k = Object.keys(CAT_NAMES).find(x => CAT_NAMES[x] === category), d = CD[k] || [80000, 60]
+  return {km: d[0], mo: d[1], note: `Estimare orientativă pentru categoria „${category}”. Verifică în manualul mașinii.`}
+}
 export const search = (q, t) => { const w = norm(q).split(/\s+/).filter(Boolean); return forType(t).filter(c => w.every(x => norm(c.name).includes(x))) }
