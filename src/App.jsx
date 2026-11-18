@@ -19,8 +19,9 @@ const empty = {cars: [], parts: [], logs: [], fuel: [], docs: [], prices: DEFAUL
 
 export default function App() {
   const [s, setS] = useState(null), [ready, setReady] = useState(false), [D, setD] = useState(empty)
-  const [carId, setCarId] = useState(null), [tab, setTab] = useState(0), [add, setAdd] = useState(false), [edit, setEdit] = useState(null), [cfg, setCfg] = useState(false), [al, setAl] = useState(false), [toast, setToast] = useState(''), [err, setErr] = useState('')
+  const [carId, setCarId0] = useState(() => { try { return localStorage.getItem('tgarage.car') } catch { return null } }), [tab, setTab] = useState(0), [add, setAdd] = useState(false), [edit, setEdit] = useState(null), [cfg, setCfg] = useState(false), [al, setAl] = useState(false), [toast, setToast] = useState(''), [err, setErr] = useState('')
   const {th, setTh, img, setImg, t} = useTheme()
+  const setCarId = v => setCarId0(cur => { const n = typeof v === 'function' ? v(cur) : v; try { if (n) localStorage.setItem('tgarage.car', n); else localStorage.removeItem('tgarage.car') } catch {} return n })
   useEffect(() => {
     sb.auth.getSession().then(({data}) => { setS(data.session); setReady(true) })
     const {data: l} = sb.auth.onAuthStateChange((_, x) => setS(x)); return () => l.subscription.unsubscribe()
