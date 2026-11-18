@@ -4,6 +4,10 @@ import {supabase as sb} from '../lib/supabase'
 
 export default function Auth() {
   const [em, setEm] = useState(''), [pw, setPw] = useState(''), [mode, setMode] = useState('in'), [msg, setMsg] = useState('')
+  const forgot = async () => {
+    if (!em) return setMsg('Scrie emailul mai sus.')
+    const {error} = await sb.auth.resetPasswordForEmail(em, {redirectTo: window.location.origin}); setMsg(error ? error.message : 'Dacă emailul există, ai primit un link de resetare a parolei.')
+  }
   const go = async () => {
     setMsg('')
     const r = mode === 'in' ? await sb.auth.signInWithPassword({email: em, password: pw}) : await sb.auth.signUp({email: em, password: pw})
@@ -15,5 +19,6 @@ export default function Auth() {
     <input type="password" placeholder="Parolă (min. 6 caractere)" value={pw} onChange={e => setPw(e.target.value)}/>
     <motion.button whileTap={{scale: .96}} className="w" style={{marginTop: 8}} onClick={go}>{mode === 'in' ? 'Intră' : 'Creează cont'}</motion.button>
     {msg && <p className="mu">{msg}</p>}
+    {mode === 'in' && <button className="g w" style={{marginTop: 8}} onClick={forgot}>Am uitat parola</button>}
     <button className="g w" style={{marginTop: 8}} onClick={() => setMode(mode === 'in' ? 'up' : 'in')}>{mode === 'in' ? 'Nu ai cont? Creează unul' : 'Ai deja cont? Intră'}</button></div></main>
 }
