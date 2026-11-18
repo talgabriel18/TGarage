@@ -1,7 +1,9 @@
-import {useState} from 'react'
+import {useEffect, useState} from 'react'
 import {supabase as sb} from '../lib/supabase'
 import {ro, ron, dt, daysTo, wear} from '../lib/util'
 import YearReview from '../components/YearReview'
+import {buildReport} from '../lib/report'
+import {useUrl} from '../lib/media'
 import {exportCsv, templateCsv, parseCsv, mapFuel} from '../lib/csv'
 
 const TABLES = ['vehicles', 'vehicle_parts', 'maintenance_logs', 'fuel_logs', 'documents', 'prices', 'expenses']
@@ -21,6 +23,18 @@ export default function Acte({D, car, reload, onEdit}) {
   const docs = D.docs.filter(d => d.vehicle_id === car.id).sort((a, b) => a.expires_on.localeCompare(b.expires_on))
   const logs = D.logs.filter(l => l.vehicle_id === car.id).sort((a, b) => a.date.localeCompare(b.date))
   const cost = logs.reduce((s, l) => s + Number(l.part_cost) + Number(l.labor_cost), 0)
+  const photoUrl = useUrl(car.image_url), [pdf, setPdf] = useState(null)
+  useEffect(() => {
+    if (!rep) { setPdf(null); return }
+    let ok = true; setPdf(null)
+    buildReport({car, docs, logs, parts: D.parts.filter(p => p.vehicle_id === car.id), photoUrl}).then(b => ok && setPdf(b)).catch(() => ok && setPdf(false))
+    return () => { ok = false }
+  }, [rep, car.id, photoUrl])
+  const savePdf = async () => {
+    const name = `raport-${(car.brand + '-' + (car.model || '')).toLowerCase().replace(/\W+/g, '-')}.pdf`, file = new File([pdf], name, {type: 'application/pdf'})
+    try { if (navigator.canShare && navigator.canShare({files: [file]})) { await navigator.share({files: [file], title: 'Raport vânzare auto'}); return } } catch (e) { if (e && e.name === 'AbortError') return }
+    const a = document.createElement('a'); a.href = URL.createObjectURL(pdf); a.download = name; document.body.appendChild(a); a.click(); a.remove()
+  }
   const del = async id => { if (confirm('Ștergi actul?')) { await sb.from('documents').delete().eq('id', id); reload(car.id) } }
   const importCsv = async e => {
     const file = e.target.files[0]; e.target.value = ''; if (!file) return
@@ -46,7 +60,8 @@ export default function Acte({D, car, reload, onEdit}) {
     } catch (x) { setMsg('Eroare: ' + x.message) }
   }
   if (rep) return <>
-    <div className="row noprint"><button className="g" onClick={() => setRep(false)}>← Înapoi</button><button onClick={() => window.print()}>Salvează PDF / Printează</button></div>
+    <div className="row noprint"><button className="g" onClick={() => setRep(false)}>← Înapoi</button><button disabled={!pdf} onClick={savePdf}>{pdf === null ? 'Se pregătește…' : pdf === false ? 'Eroare PDF' : '📄 Salvează / trimite PDF'}</button></div>
+    {pdf && <p className="mu noprint" style={{margin: '4px 0'}}>PDF gata. Pe iPhone alegi „Salvează în Fișiere”, WhatsApp, Mail sau AirDrop.</p>}
     <h2>Raport Vânzare Auto</h2>
     <div className="card"><b>{car.brand} {car.model}</b> {car.year}<br/>{car.powertrain} · {car.body} · {ro(car.odometer)} km{car.vin ? <><br/>VIN {car.vin}</> : null}</div>
     <div className="card"><b>Acte</b>{docs.length ? docs.map(d => <div key={d.id} className="row"><span>{d.type}</span><span>până la {dt(d.expires_on)}</span></div>) : <p className="mu">—</p>}</div>
