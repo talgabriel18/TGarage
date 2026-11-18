@@ -8,7 +8,7 @@ export default function Alerts({list, onClose}) {
   return <>
     <div className="bk" onClick={onClose}/>
     <motion.div className="sheet" initial={{y: '100%'}} animate={{y: 0}} transition={{type: 'spring', stiffness: 260, damping: 28}}>
-      <div className="row"><h2>Notificări</h2><button className="g" onClick={onClose}>✕</button></div>
+      <div className="row"><h2>Notificări TGarage</h2><button className="g" onClick={onClose}>✕</button></div>
       {list.length === 0 && <p className="mu">Totul e în regulă ✅ Nu ai nimic de rezolvat.</p>}
       {list.map(a => <div key={a.id} className="row" style={{padding: '10px 0', borderBottom: '1px solid var(--bd)'}}>
         <span>{a.icon} <b>{a.title}</b><br/><small className="mu">{a.text}</small></span>

@@ -3,21 +3,27 @@ import {motion} from 'framer-motion'
 import {supabase as sb} from '../lib/supabase'
 import {upload} from '../lib/media'
 import {CATS, DEFAULT_PRICES, fuelKey} from '../data'
-import {today} from '../lib/util'
-import {search} from '../catalog'
+import {today, durata} from '../lib/util'
+import {search, estimate} from '../catalog'
 
 export default function AddSheet({D, car, parts, tab, edit, onClose, onSaved}) {
   const ev = car.powertrain === 'Electric', phev = car.powertrain === 'PHEV', row = edit?.row
   const [kind, setKind] = useState(edit?.kind || (tab === 2 ? 'fuel' : tab === 3 ? 'doc' : 'service'))
   const init = () => {
-    if (!edit) return {date: today(), odo: car.odometer, part: parts[0]?.id || 'new', cat: CATS[0], lk: 20000, lm: 24, unit: ev ? 'kWh' : 'L', full: true, type: 'ITP', pu: ''}
+    if (!edit) return {date: today(), odo: car.odometer, part: parts[0]?.id || 'new', cat: CATS[0], lk: 20000, ly: 2, lm: 0, unit: ev ? 'kWh' : 'L', full: true, type: 'ITP', pu: ''}
     if (edit.kind === 'service') return {date: row.date, odo: row.odometer, pname: row.part_name, oem: row.brand_oem || '', pc: row.part_cost, lc: row.labor_cost, notes: row.notes || ''}
     if (edit.kind === 'fuel') return {date: row.date, odo: row.odometer, q: row.quantity, pu: row.price_per_unit, station: row.station || '', full: row.full_tank, unit: row.unit}
     if (edit.kind === 'doc') return {type: row.type, pol: row.policy_number || '', exp: row.expires_on}
-    return {pname: row.name, cat: row.category || CATS[0], lk: row.life_km, lm: row.life_months, lo: row.last_odo, ld: row.last_date}
+    return {pname: row.name, cat: row.category || CATS[0], lk: row.life_km, ly: Math.floor((row.life_months || 0) / 12), lm: (row.life_months || 0) % 12, lo: row.last_odo, ld: row.last_date}
   }
   const [f, setF] = useState(init), [file, setFile] = useState(null), [busy, setBusy] = useState(false), [err, setErr] = useState('')
   const set = (k, v) => setF({...f, [k]: v}), I = k => ({value: f[k] ?? '', onChange: e => set(k, e.target.value)})
+  const TT = k => ({value: f[k] ?? '', onChange: e => setF({...f, [k]: e.target.value, touched: true})})
+  const total = (+f.ly || 0) * 12 + (+f.lm || 0)
+  const est = () => { const r = estimate(f.name || f.pname || '', f.cat); setF(x => ({...x, lk: r.km, ly: Math.floor(r.mo / 12), lm: r.mo % 12, note: r.note, touched: false})) }
+  const life = <><small className="mu">Durată de viață: km · ani · luni (poți completa ambele, anii și lunile se adună)</small>
+    <div className="grid" style={{gridTemplateColumns: '1.4fr 1fr 1fr'}}><input type="number" placeholder="km" {...TT('lk')}/><input type="number" placeholder="ani" {...TT('ly')}/><input type="number" placeholder="luni" {...TT('lm')}/></div>
+    <small className="mu">{total ? `= ${durata(total)}. ` : ''}{f.note || ''}</small><br/><button className="g sm" style={{marginTop: 6}} onClick={est}>✨ Estimează automat</button></>
   const unit = ev ? 'kWh' : phev ? f.unit : 'L'
   const defPrice = unit === 'kWh' ? D.prices.kWh : (D.prices[fuelKey(car.powertrain)] ?? DEFAULT_PRICES.Benzină)
   const ok = x => { if (x.error) throw x.error }
@@ -35,7 +41,7 @@ export default function AddSheet({D, car, parts, tab, edit, onClose, onSaved}) {
           let part = parts.find(p => p.id === f.part)
           if (f.part === 'new') {
             if (!f.name) throw new Error('Scrie numele piesei')
-            const r = await sb.from('vehicle_parts').insert({vehicle_id: car.id, name: f.name, category: f.cat, hot: f.hot || 'caroserie', life_km: +f.lk || 20000, life_months: +f.lm || 24, last_odo: odo, last_date: f.date}).select().single(); ok(r); part = r.data
+            const r = await sb.from('vehicle_parts').insert({vehicle_id: car.id, name: f.name, category: f.cat, hot: f.hot || 'caroserie', life_km: +f.lk || 20000, life_months: total || 24, last_odo: odo, last_date: f.date}).select().single(); ok(r); part = r.data
           } else ok(await sb.from('vehicle_parts').update({last_odo: odo, last_date: f.date}).eq('id', part.id))
           ok(await sb.from('maintenance_logs').insert({vehicle_id: car.id, part_name: part.name, category: part.category, brand_oem: f.oem, date: f.date, odometer: odo, part_cost: +f.pc || 0, labor_cost: +f.lc || 0, notes: f.notes, receipt_url: receipt}))
         }
@@ -51,7 +57,7 @@ export default function AddSheet({D, car, parts, tab, edit, onClose, onSaved}) {
         const r = {type: f.type, policy_number: f.pol, expires_on: f.exp}
         ok(edit ? await sb.from('documents').update(r).eq('id', row.id) : await sb.from('documents').insert({...r, vehicle_id: car.id}))
       }
-      if (kind === 'part') ok(await sb.from('vehicle_parts').update({name: f.pname, category: f.cat, life_km: +f.lk || 1, life_months: +f.lm || null, last_odo: +f.lo || 0, last_date: f.ld || today()}).eq('id', row.id))
+      if (kind === 'part') ok(await sb.from('vehicle_parts').update({name: f.pname, category: f.cat, life_km: +f.lk || 1, life_months: total || null, last_odo: +f.lo || 0, last_date: f.ld || today()}).eq('id', row.id))
       if ((kind === 'service' || kind === 'fuel') && odo > car.odometer) await sb.from('vehicles').update({odometer: odo}).eq('id', car.id)
       await onSaved()
     } catch (e) { setErr(e.message); setBusy(false) }
@@ -66,9 +72,9 @@ export default function AddSheet({D, car, parts, tab, edit, onClose, onSaved}) {
       {(kind === 'service' || kind === 'fuel') && <div className="grid"><input type="date" {...I('date')}/><input type="number" placeholder="Km" {...I('odo')}/></div>}
       {kind === 'service' && <>
         {edit ? <input placeholder="Piesă" {...I('pname')}/> : <select value={f.part} onChange={e => set('part', e.target.value)}>{parts.map(p => <option key={p.id} value={p.id}>{p.name}</option>)}<option value="new">＋ Altă piesă din catalog…</option></select>}
-        {!edit && f.part === 'new' && <><input placeholder="🔎 Caută în catalog (ex. bujii, amortizor)" {...I('q')}/>{f.q && <div className="chips" style={{flexWrap: 'wrap'}}>{search(f.q, car.powertrain).slice(0, 8).map(c => <button key={c.name} className="g sm" onClick={() => setF({...f, name: c.name, cat: c.category, lk: c.life_km, lm: c.life_months, hot: c.hot, q: ''})}>{c.name}</button>)}</div>}<input placeholder="Nume piesă" {...I('name')}/>
+        {!edit && f.part === 'new' && <><input placeholder="🔎 Caută în catalog (ex. bujii, amortizor)" {...I('q')}/>{f.q && <div className="chips" style={{flexWrap: 'wrap'}}>{search(f.q, car.powertrain).slice(0, 8).map(c => <button key={c.name} className="g sm" onClick={() => setF({...f, name: c.name, cat: c.category, lk: c.life_km, ly: Math.floor(c.life_months / 12), lm: c.life_months % 12, hot: c.hot, q: '', touched: true, note: 'Din catalog (valori orientative).'})}>{c.name}</button>)}</div>}<input placeholder="Nume piesă" {...I('name')} onBlur={() => { if (f.name && !f.touched) est() }}/>
           <select {...I('cat')}>{CATS.map(c => <option key={c}>{c}</option>)}</select>
-          <div className="grid"><input type="number" placeholder="Durată km" {...I('lk')}/><input type="number" placeholder="Durată luni" {...I('lm')}/></div></>}
+          {life}</>}
         <input placeholder="Marcă / cod OEM" {...I('oem')}/>
         <div className="grid"><input type="number" placeholder="Cost piesă (RON)" {...I('pc')}/><input type="number" placeholder="Manoperă (RON)" {...I('lc')}/></div>
         <textarea rows="2" placeholder="Note" {...I('notes')}/></>}
@@ -83,7 +89,7 @@ export default function AddSheet({D, car, parts, tab, edit, onClose, onSaved}) {
         <small className="mu">Data expirării</small><input type="date" {...I('exp')}/></>}
       {kind === 'part' && <>
         <input placeholder="Nume piesă" {...I('pname')}/><select {...I('cat')}>{CATS.map(c => <option key={c}>{c}</option>)}</select>
-        <div className="grid"><input type="number" placeholder="Durată (km)" {...I('lk')}/><input type="number" placeholder="Durată (luni)" {...I('lm')}/></div>
+        {life}
         <small className="mu">Ultima înlocuire</small><div className="grid"><input type="date" {...I('ld')}/><input type="number" placeholder="La km" {...I('lo')}/></div></>}
       {(kind === 'service' || kind === 'fuel') && <><small className="mu">{edit ? 'Poză bon nouă (înlocuiește cea veche)' : 'Poză bon / factură (opțional)'}</small><input type="file" accept="image/*" onChange={e => setFile(e.target.files[0])}/></>}
       {err && <p style={{color: 'var(--ur)'}}>{err}</p>}
