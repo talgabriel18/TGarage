@@ -6,11 +6,11 @@ import {CATS, DEFAULT_PRICES, EXP_CATS, fuelKey} from '../data'
 import {today, durata} from '../lib/util'
 import {search, estimate} from '../catalog'
 
-export default function AddSheet({D, car, parts, tab, edit, onClose, onSaved, onKeep}) {
+export default function AddSheet({D, car, parts, tab, edit, onClose, onSaved, onKeep, preset}) {
   const ev = car.powertrain === 'Electric', phev = car.powertrain === 'PHEV', row = edit?.row
-  const [kind, setKind] = useState(edit?.kind || (tab === 2 ? 'fuel' : tab === 3 ? 'doc' : 'service'))
+  const [kind, setKind] = useState(edit?.kind || (preset ? 'service' : tab === 2 ? 'fuel' : tab === 3 ? 'doc' : 'service'))
   const init = () => {
-    if (!edit) return {date: today(), odo: car.odometer, part: parts[0]?.id || 'new', cat: CATS[0], lk: 20000, ly: 2, lm: 0, unit: ev ? 'kWh' : 'L', full: true, type: 'ITP', pu: '', ecat: EXP_CATS[0], amt: ''}
+    if (!edit) return {date: today(), odo: car.odometer, part: preset || parts[0]?.id || 'new', cat: CATS[0], lk: 20000, ly: 2, lm: 0, unit: ev ? 'kWh' : 'L', full: true, type: 'ITP', pu: '', ecat: EXP_CATS[0], amt: ''}
     if (edit.kind === 'service') return {date: row.date, odo: row.odometer, pname: row.part_name, oem: row.brand_oem || '', pc: row.part_cost, lc: row.labor_cost, notes: row.notes || ''}
     if (edit.kind === 'fuel') return {date: row.date, odo: row.odometer, q: row.quantity, pu: row.price_per_unit, station: row.station || '', full: row.full_tank, unit: row.unit}
     if (edit.kind === 'expense') return {date: row.date, ecat: row.category, amt: row.amount, enote: row.note || ''}

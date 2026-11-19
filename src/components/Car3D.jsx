@@ -42,6 +42,14 @@ function Glb({url, body, color, xray}) {
   return <group rotation={[0, ROT[body] || 0, 0]}><primitive object={obj}/></group>
 }
 
+const BT = {}
+const badgeTex = n => BT[n] || (BT[n] = (() => {
+  const c = document.createElement('canvas'); c.width = c.height = 64; const g = c.getContext('2d')
+  g.fillStyle = 'rgba(0,0,0,.78)'; g.beginPath(); g.arc(32, 32, 28, 0, Math.PI * 2); g.fill(); g.strokeStyle = '#ffffff'; g.lineWidth = 3; g.stroke()
+  g.fillStyle = '#ffffff'; g.font = '700 34px sans-serif'; g.textAlign = 'center'; g.textBaseline = 'middle'; g.fillText(String(n), 32, 34)
+  return new THREE.CanvasTexture(c)
+})())
+
 function Hot({p, onPick}) {
   const r = useRef(), w = useRef()
   useFrame(({clock}) => {
@@ -51,8 +59,9 @@ function Hot({p, onPick}) {
     w.current.scale.setScalar(1 + k * 2.2); w.current.material.opacity = .55 * (1 - k)
   })
   return <group position={p.pos} renderOrder={20}>
-    <mesh ref={r} renderOrder={21} onClick={e => { e.stopPropagation(); onPick(p) }}><sphereGeometry args={[.12, 16, 16]}/><meshBasicMaterial color={p.col} transparent opacity={.95} depthTest={false}/></mesh>
-    <mesh ref={w} renderOrder={20} raycast={() => null}><sphereGeometry args={[.12, 12, 12]}/><meshBasicMaterial color={p.ring || p.col} transparent opacity={.5} depthWrite={false} depthTest={false}/></mesh>
+    <mesh ref={r} renderOrder={21} onClick={e => { e.stopPropagation(); onPick(p) }}><sphereGeometry args={[p.count > 1 ? .15 : .12, 16, 16]}/><meshBasicMaterial color={p.col} transparent opacity={.95} depthTest={false}/></mesh>
+    {p.count > 1 && <sprite position={[0, .26, 0]} scale={[.22, .22, 1]} renderOrder={22} raycast={() => null}><spriteMaterial map={badgeTex(p.count)} transparent depthTest={false}/></sprite>}
+    <mesh ref={w} renderOrder={20} raycast={() => null}><sphereGeometry args={[p.count > 1 ? .15 : .12, 12, 12]}/><meshBasicMaterial color={p.ring || p.col} transparent opacity={.5} depthWrite={false} depthTest={false}/></mesh>
   </group>
 }
 
@@ -163,7 +172,7 @@ function Rig({focus, controls, stage}) {
   return null
 }
 
-export default function Car3D({car, parts, xray, focus, onPick, stage}) {
+export default function Car3D({car, parts, xray, focus, onPick, onMiss, stage}) {
   const controls = useRef(), [url, setUrl] = useState(null)
   const color = car.color || '#35507a'
   useEffect(() => {
@@ -172,7 +181,7 @@ export default function Car3D({car, parts, xray, focus, onPick, stage}) {
     return () => { ok = false }
   }, [car.id, car.body, car.model_url])
   const proc = <Procedural body={car.body} color={color} xray={xray}/>
-  return <Canvas camera={{position: stage === 'garaj' ? [2.2, 1.9, 3] : [4, 3, 5.5], fov: stage === 'garaj' ? 58 : 45}} dpr={[1, 2]}>
+  return <Canvas camera={{position: stage === 'garaj' ? [2.2, 1.9, 3] : [4, 3, 5.5], fov: stage === 'garaj' ? 58 : 45}} dpr={[1, 2]} onPointerMissed={() => onMiss && onMiss()}>
     <ambientLight intensity={.8}/><directionalLight position={[3, 5, 4]} intensity={1.1}/>
     <Suspense fallback={null}>{url ? <Boundary key={url} fallback={proc}><Glb url={url} body={car.body} color={color} xray={xray}/></Boundary> : proc}</Suspense>
     <Suspense fallback={null}><Stage kind={stage}/></Suspense>
