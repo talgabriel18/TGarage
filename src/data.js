@@ -1,4 +1,4 @@
-import {CAT_NAMES, forType} from './catalog'
+import {CAT_NAMES, forType, norm} from './catalog'
 export const TIPURI = ['Benzină', 'Diesel', 'GPL', 'Hibrid', 'PHEV', 'Electric']
 export const CATS = Object.values(CAT_NAMES)
 export const DEFAULT_PRICES = {Benzină: 9.8, Motorină: 10.84, GPL: 4.78, kWh: 1.9}
@@ -31,15 +31,20 @@ export const EXP_CATS = ['Asigurare', 'Parcare', 'Spălătorie', 'Taxe și impoz
 // Zone (culoare per zona) si pozitii multiple (4 roti etc.) pentru punctele pulsatorii
 export const ZONE = {ulei: 'motor', distributie: 'motor', filtre: 'motor', racire: 'motor', frana: 'frane', amortizor: 'susp', directie: 'susp', anvelope: 'roti', baterie12: 'elec', bateriaHV: 'elec', habitaclu: 'cabina', clima: 'cabina', transmisie: 'trans', evacuare: 'evac', gpl: 'evac', lumini: 'caros', caroserie: 'caros'}
 export const ZONES = {motor: ['Motor', '#fb923c'], frane: ['Frânare', '#f472b6'], susp: ['Suspensie', '#22d3ee'], roti: ['Roți', '#a3e635'], elec: ['Electric', '#a78bfa'], cabina: ['Habitaclu', '#60a5fa'], trans: ['Transmisie', '#facc15'], evac: ['Evacuare', '#94a3b8'], caros: ['Caroserie', '#e5e7eb']}
-const W4 = y => [[1.15, y, .95], [1.15, y, -.95], [-1.15, y, .95], [-1.15, y, -.95]]
-export const HOT_MULTI = {frana: W4(.4), anvelope: W4(.85), amortizor: [[1.15, .7, .72], [1.15, .7, -.72], [-1.15, .7, .72], [-1.15, .7, -.72]], directie: [[1.3, .62, .8], [1.3, .62, -.8]]}
-export function spotsOf(parts, body) {
-  const groups = {}
-  parts.forEach(p => { (groups[p.hot] = groups[p.hot] || []).push(p) })
-  const out = []
-  Object.entries(groups).forEach(([k, list]) => {
-    const base = HOT_MULTI[k] || [posFor(body, k)]
-    list.forEach((p, j) => { const off = (j - (list.length - 1) / 2) * .2; base.forEach((b, i) => out.push({...p, sid: p.id + '-' + i, pos: [b[0], b[1] + off, b[2]]})) })
+const KEYNAME = {ulei: 'Motor', distributie: 'Distribuție', filtre: 'Filtre', racire: 'Răcire', baterie12: 'Baterie 12V', bateriaHV: 'Baterie tracțiune', habitaclu: 'Habitaclu', clima: 'Climatizare', transmisie: 'Transmisie', evacuare: 'Evacuare', gpl: 'Instalație GPL', lumini: 'Iluminat', caroserie: 'Caroserie'}
+const WHEELK = ['frana', 'anvelope', 'amortizor', 'directie']
+const WHEELS = [['față stânga', 1.15, .95, 'F'], ['față dreapta', 1.15, -.95, 'F'], ['spate stânga', -1.15, .95, 'R'], ['spate dreapta', -1.15, -.95, 'R']]
+const axle = p => { const n = norm(p.name); return /fata/.test(n) ? 'F' : /spate/.test(n) ? 'R' : p.hot === 'directie' ? 'F' : 'A' }
+const worstOf = list => list.reduce((a, b) => b.pct < a.pct ? b : a)
+// Un punct pe fiecare roata (cu meniu de piese) + un punct pe zona pentru restul pieselor. `parts` au deja pct si col (din wear).
+export function sitesOf(parts, body) {
+  const out = [], wp = parts.filter(p => WHEELK.includes(p.hot))
+  WHEELS.forEach(([n, x, z, ax], i) => {
+    const L = wp.filter(p => axle(p) === 'A' || axle(p) === ax)
+    if (L.length) out.push({id: 'w' + i, name: 'Roată ' + n, pos: [x, .5, z], parts: L, col: worstOf(L).col, zoneColor: ZONES.roti[1], zoneName: ZONES.roti[0]})
   })
+  const groups = {}
+  parts.filter(p => !WHEELK.includes(p.hot)).forEach(p => { (groups[p.hot] = groups[p.hot] || []).push(p) })
+  Object.entries(groups).forEach(([k, L]) => out.push({id: k, name: KEYNAME[k] || k, pos: posFor(body, k), parts: L, col: worstOf(L).col, zoneColor: (ZONES[ZONE[k]] || [])[1] || worstOf(L).col, zoneName: (ZONES[ZONE[k]] || [])[0] || KEYNAME[k] || k}))
   return out
 }

@@ -32,7 +32,7 @@ const greet = () => { const h = new Date().getHours(); return h < 5 ? 'Noapte bu
 
 export default function App() {
   const [s, setS] = useState(null), [ready, setReady] = useState(false), [D, setD] = useState(empty)
-  const [carId, setCarId0] = useState(() => { try { return localStorage.getItem('tgarage.car') } catch { return null } }), [tab, setTab] = useState(0), [add, setAdd] = useState(false), [edit, setEdit] = useState(null), [cfg, setCfg] = useState(false), [loaded, setLoaded] = useState(false), [gate, setGate] = useState('check'), [al, setAl] = useState(false), [toast, setToast] = useState(''), [dir, setDir] = useState(1), [burst, setBurst] = useState(0), [tour, setTour] = useState(() => { try { return !localStorage.getItem('tgarage.tour') } catch { return false } }), [err, setErr] = useState('')
+  const [carId, setCarId0] = useState(() => { try { return localStorage.getItem('tgarage.car') } catch { return null } }), [tab, setTab] = useState(0), [add, setAdd] = useState(false), [edit, setEdit] = useState(null), [cfg, setCfg] = useState(false), [loaded, setLoaded] = useState(false), [gate, setGate] = useState('check'), [al, setAl] = useState(false), [toast, setToast] = useState(''), [dir, setDir] = useState(1), [burst, setBurst] = useState(0), [preset, setPreset] = useState(null), [tour, setTour] = useState(() => { try { return !localStorage.getItem('tgarage.tour') } catch { return false } }), [err, setErr] = useState('')
   const {th, setTh, img, setImg, t} = useTheme()
   const touch = useRef(null)
   const px = useMotionValue(0)
@@ -97,9 +97,9 @@ export default function App() {
   const delA = id => setAk(c => ({...c, del: [...c.del, id]}))
   const readAll = () => setAk(c => ({...c, read: [...new Set([...c.read, ...alerts.map(a => a.id)])]}))
   const delAll = () => setAk(c => ({...c, del: [...new Set([...c.del, ...alerts.map(a => a.id)])]}))
-  const props = {D, car, reload, setCar: setCarId, onEdit: setEdit, stage: th.stage || 'studio'}
+  const props = {D, car, reload, setCar: setCarId, onEdit: setEdit, onService: id => { setPreset(id); setAdd(true) }, stage: th.stage || 'studio'}
   const page = tab === 4 ? <Cont user={s.user} onTheme={() => setCfg(true)}/> : tab === 0 || !car ? <Garage {...props}/> : [null, <Parts {...props}/>, <Consum {...props}/>, <Acte {...props}/>][tab]
-  const closeAdd = () => { setAdd(false); setEdit(null) }
+  const closeAdd = () => { setAdd(false); setEdit(null); setPreset(null) }
   return <MotionConfig reducedMotion={th.calm ? 'always' : 'never'}>
     {bg}
     <header className="top"><div style={{display: 'flex', gap: 12, alignItems: 'center'}}><div onClick={() => go(4)} style={{cursor: 'pointer'}}>{avatarUrl ? <img src={avatarUrl} className="logo av" alt=""/> : md.avatar_emoji ? <span className="logo av">{md.avatar_emoji}</span> : <img src="/logo.png" className="logo" alt={APP}/>}</div><div><small className="mu">{greet()}{nm ? `, ${nm}` : ''}{car ? ` · ${car.brand} ${car.model || ''}` : ''}</small><h1>{TABS[tab][1]}</h1></div></div>
@@ -108,7 +108,7 @@ export default function App() {
       {tab === 0 && !nm && <NamePrompt/>}
       <motion.div style={{x: px}}><AnimatePresence mode="wait" custom={dir}><motion.div className="page" key={tab} custom={dir} variants={slide} initial="in" animate="mid" exit="out" transition={{type: 'spring', stiffness: 300, damping: 30}}>{page}</motion.div></AnimatePresence></motion.div></main>
     {car && tab !== 4 && <motion.button className="fab" whileTap={{scale: .92}} initial={{scale: 0}} animate={{scale: 1}} onClick={() => setAdd(true)}>+ Adaugă</motion.button>}
-    {(add || edit) && car && <AddSheet key={edit ? edit.row.id : 'new'} D={D} car={car} parts={parts} tab={tab} edit={edit} onClose={closeAdd} onSaved={async k => { closeAdd(); await reload(car.id); if (k === 'service' || k === 'fuel' || k === 'expense') setBurst(Date.now()) }} onKeep={async () => { await reload(car.id); setBurst(Date.now()) }}/>}
+    {(add || edit) && car && <AddSheet key={edit ? edit.row.id : 'new'} preset={preset} D={D} car={car} parts={parts} tab={tab} edit={edit} onClose={closeAdd} onSaved={async k => { closeAdd(); await reload(car.id); if (k === 'service' || k === 'fuel' || k === 'expense') setBurst(Date.now()) }} onKeep={async () => { await reload(car.id); setBurst(Date.now()) }}/>}
     {al && <Alerts list={alerts} read={ak.read} onRead={readA} onDel={delA} onReadAll={readAll} onDelAll={delAll} onClose={() => setAl(false)}/>}
     {toast && <div className="toast">{toast}</div>}
     {burst > 0 && !th.calm && <Confetti key={burst}/>}

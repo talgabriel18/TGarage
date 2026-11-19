@@ -62,3 +62,5 @@ img{-webkit-user-drag:none}
 .mrow{display:flex;align-items:center;gap:12px;padding:13px 2px;border-bottom:1px solid var(--bd);cursor:pointer}
 .mrow:last-child{border-bottom:0}
 .mi{font-size:22px;width:30px;text-align:center}
+.picker{position:absolute;left:8px;right:8px;bottom:8px;background:var(--sheet);-webkit-backdrop-filter:blur(14px);backdrop-filter:blur(14px);border:1px solid var(--bd);border-radius:18px;padding:10px;max-height:48%;overflow:auto;z-index:3}
+.pk{display:flex;flex-wrap:wrap;gap:6px}
