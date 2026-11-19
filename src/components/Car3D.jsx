@@ -77,15 +77,23 @@ function Clock({p}) {
   </group>
 }
 
+const mkTex = (draw, rx, ry) => { const c = document.createElement('canvas'); c.width = c.height = 512; draw(c.getContext('2d')); const t = new THREE.CanvasTexture(c); t.wrapS = t.wrapT = THREE.RepeatWrapping; t.repeat.set(rx, ry); t.colorSpace = THREE.SRGBColorSpace; t.anisotropy = 4; return t }
+
 function GarageScene() {
   const logo = useTexture('/logo.png'), flat = [-Math.PI / 2, 0, 0], hr = new Date().getHours(), sky = hr < 6 || hr >= 20 ? '#0b1530' : hr < 8 || hr >= 18 ? '#f59e6b' : '#8ec5ff'
+  const floorT = useMemo(() => mkTex(g => { g.fillStyle = '#a3abb8'; g.fillRect(0, 0, 512, 512); for (let i = 0; i < 2200; i++) { g.fillStyle = Math.random() < .5 ? 'rgba(255,255,255,.06)' : 'rgba(0,0,0,.06)'; g.fillRect(Math.random() * 512, Math.random() * 512, 2, 2) } g.strokeStyle = 'rgba(50,58,72,.6)'; g.lineWidth = 4; g.strokeRect(2, 2, 508, 508) }, 4, 4), [])
+  const woodT = useMemo(() => mkTex(g => { for (let x = 0; x < 512; x += 32) { g.fillStyle = (x / 32) % 2 ? '#7a5238' : '#6a4630'; g.fillRect(x, 0, 29, 512); g.fillStyle = 'rgba(0,0,0,.5)'; g.fillRect(x + 29, 0, 3, 512); for (let k = 0; k < 26; k++) { g.fillStyle = 'rgba(255,255,255,.05)'; g.fillRect(x + Math.random() * 28, 0, 1, 512) } } }, 3.5, 1), [])
+  const wallT = useMemo(() => mkTex(g => { g.fillStyle = '#b4bac6'; g.fillRect(0, 0, 512, 512); for (let i = 0; i < 2600; i++) { g.fillStyle = Math.random() < .5 ? 'rgba(255,255,255,.07)' : 'rgba(0,0,0,.06)'; g.fillRect(Math.random() * 512, Math.random() * 512, 2, 2) } g.strokeStyle = 'rgba(70,78,92,.45)'; g.lineWidth = 3; g.strokeRect(1, 1, 510, 510) }, 5, 1), [])
   return <group>
-    <mesh rotation={flat}><planeGeometry args={[14, 14]}/><meshStandardMaterial color="#2a2d34" roughness={.5} metalness={.25}/></mesh>
+    <hemisphereLight args={['#dfe7ff', '#3a3f4b', .9]}/>
+    <pointLight position={[-2.5, 2.6, -3.5]} intensity={.8} distance={7} color="#ffd9a0"/><pointLight position={[2.5, 2.6, -3.5]} intensity={.8} distance={7} color="#ffd9a0"/>
+    <Bx p={[0, 4.35, -4.45]} s={[14, .05, .05]} c="#ffd9a0" e="#ffd9a0"/>
+    <mesh rotation={flat}><planeGeometry args={[14, 14]}/><meshStandardMaterial map={floorT} roughness={.35} metalness={.15}/></mesh>
     <Bx p={[0, .01, 1.9]} s={[5.4, .01, .08]} c="#facc15"/><Bx p={[0, .01, -1.9]} s={[5.4, .01, .08]} c="#facc15"/><Bx p={[2.7, .01, 0]} s={[.08, .01, 3.8]} c="#facc15"/><Bx p={[-2.7, .01, 0]} s={[.08, .01, 3.8]} c="#facc15"/>
-    <mesh position={[0, 2.2, -4.5]}><planeGeometry args={[14, 5]}/><meshStandardMaterial color="#303646" roughness={.95}/></mesh>
-    <mesh position={[-5.5, 2.2, 0]} rotation={[0, Math.PI / 2, 0]}><planeGeometry args={[14, 5]}/><meshStandardMaterial color="#262b39" roughness={.95}/></mesh>
-    <Bx p={[0, .5, -4.47]} s={[14, 1, .04]} c="#1d2230"/><Bx p={[0, 1.02, -4.46]} s={[14, .06, .05]} c="#ff8a3d"/>
-    <Bx p={[-.6, 2.3, -4.46]} s={[4.4, 2, .04]} c="#5b4a3a" ro={.9}/>
+    <mesh position={[0, 2.2, -4.5]}><planeGeometry args={[14, 5]}/><meshStandardMaterial map={woodT} roughness={.7}/></mesh>
+    <mesh position={[-5.5, 2.2, 0]} rotation={[0, Math.PI / 2, 0]}><planeGeometry args={[14, 5]}/><meshStandardMaterial map={wallT} roughness={.9}/></mesh>
+    <Bx p={[0, .5, -4.47]} s={[14, 1, .04]} c="#343a47"/><Bx p={[0, 1.02, -4.46]} s={[14, .06, .05]} c="#ff8a3d"/>
+    <Bx p={[-.6, 2.3, -4.46]} s={[4.4, 2, .04]} c="#2b303c" ro={.7}/>
     {[[-2.3, .1], [-1.7, -.1], [-1.1, .15], [-.5, -.15], [.1, .1], [.7, -.1]].map(([x, a], i) => <Wrench key={i} p={[x, 2.85, -4.42]} a={Math.PI / 2 + a} l={.75 + (i % 3) * .1}/>)}
     {[-2.2, -1.4, -.6, .2, 1].map((x, i) => <Hammer key={i} p={[x, 1.85, -4.42]} a={i % 2 ? .08 : -.08}/>)}
     <Bx p={[2.7, 3.2, -4.46]} s={[1.5, 1.3, .05]} c="#ffffff"/>
