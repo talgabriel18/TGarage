@@ -1,4 +1,4 @@
-import {useCallback, useEffect, useState} from 'react'
+import {useCallback, useEffect, useRef, useState} from 'react'
 import {motion, AnimatePresence, MotionConfig} from 'framer-motion'
 import {supabase as sb} from './lib/supabase'
 import {useTheme} from './lib/theme'
@@ -17,17 +17,22 @@ import Cont from './tabs/Cont'
 import {useUrl} from './lib/media'
 import Alerts from './components/Alerts'
 import {computeAlerts} from './lib/alerts'
+import Confetti from './components/Confetti'
+import Tour from './components/Tour'
+import {APP} from './brand'
 
 const TABS = [['🚗', 'Garaj 3D'], ['🔧', 'Piese & AI'], ['⛽', 'Consum'], ['📄', 'Acte'], ['👤', 'Cont']]
 const T = ['vehicles', 'vehicle_parts', 'maintenance_logs', 'fuel_logs', 'documents', 'prices']
 const empty = {cars: [], parts: [], logs: [], fuel: [], docs: [], prices: DEFAULT_PRICES, pdates: {}, raw: {}, exp: [], expOk: true, uid: null}
 
+const slide = {in: d => ({opacity: 0, x: d * 70}), mid: {opacity: 1, x: 0}, out: d => ({opacity: 0, x: d * -70})}
 const greet = () => { const h = new Date().getHours(); return h < 5 ? 'Noapte bună' : h < 12 ? 'Bună dimineața' : h < 18 ? 'Bună ziua' : 'Bună seara' }
 
 export default function App() {
   const [s, setS] = useState(null), [ready, setReady] = useState(false), [D, setD] = useState(empty)
-  const [carId, setCarId0] = useState(() => { try { return localStorage.getItem('tgarage.car') } catch { return null } }), [tab, setTab] = useState(0), [add, setAdd] = useState(false), [edit, setEdit] = useState(null), [cfg, setCfg] = useState(false), [loaded, setLoaded] = useState(false), [gate, setGate] = useState('check'), [al, setAl] = useState(false), [toast, setToast] = useState(''), [err, setErr] = useState('')
+  const [carId, setCarId0] = useState(() => { try { return localStorage.getItem('tgarage.car') } catch { return null } }), [tab, setTab] = useState(0), [add, setAdd] = useState(false), [edit, setEdit] = useState(null), [cfg, setCfg] = useState(false), [loaded, setLoaded] = useState(false), [gate, setGate] = useState('check'), [al, setAl] = useState(false), [toast, setToast] = useState(''), [dir, setDir] = useState(1), [burst, setBurst] = useState(0), [tour, setTour] = useState(() => { try { return !localStorage.getItem('tgarage.tour') } catch { return false } }), [err, setErr] = useState('')
   const {th, setTh, img, setImg, t} = useTheme()
+  const touch = useRef(null)
   const md = s?.user?.user_metadata || {}, nm = md.name, avatarUrl = useUrl(md.avatar_photo)
   const setCarId = v => setCarId0(cur => { const n = typeof v === 'function' ? v(cur) : v; try { if (n) localStorage.setItem('tgarage.car', n); else localStorage.removeItem('tgarage.car') } catch {} return n })
   useEffect(() => {
@@ -53,7 +58,7 @@ export default function App() {
     try {
       if (!s || typeof Notification === 'undefined' || Notification.permission !== 'granted') return
       const a = computeAlerts(D).filter(x => x.sev > 0), k = new Date().toDateString()
-      if (a.length && localStorage.getItem('garaj3d.notified') !== k) { localStorage.setItem('garaj3d.notified', k); new Notification('TGarage', {body: `${a.length} lucruri de rezolvat la mașinile tale`}) }
+      if (a.length && localStorage.getItem('garaj3d.notified') !== k) { localStorage.setItem('garaj3d.notified', k); new Notification(APP, {body: `${a.length} lucruri de rezolvat la mașinile tale`}) }
     } catch {}
   }, [D, s])
   const custom = th.id === 'custom' && img
@@ -66,6 +71,13 @@ export default function App() {
   if (!loaded && !err) return <>{bg}<Splash/></>
   const car = D.cars.find(c => c.id === carId) || D.cars[0]
   const parts = car ? D.parts.filter(p => p.vehicle_id === car.id) : []
+  const go = k => { setDir(k >= tab ? 1 : -1); setTab(k) }
+  const swStart = e => { const p = e.touches[0]; touch.current = e.target.closest('canvas,input,select,textarea,.chips,.sheet,button') ? null : {x: p.clientX, y: p.clientY} }
+  const swEnd = e => {
+    const o = touch.current; touch.current = null; if (!o) return
+    const p = e.changedTouches[0], dx = p.clientX - o.x, dy = p.clientY - o.y
+    if (Math.abs(dx) > 70 && Math.abs(dx) > Math.abs(dy) * 1.6) { const n = tab + (dx < 0 ? 1 : -1); if (n >= 0 && n < TABS.length) go(n) }
+  }
   const flash = m => { setToast(m); setTimeout(() => setToast(''), 2200) }
   const reload = async p => { await load(p); flash('Actualizat ✓') }
   const alerts = computeAlerts(D)
@@ -74,17 +86,19 @@ export default function App() {
   const closeAdd = () => { setAdd(false); setEdit(null) }
   return <MotionConfig reducedMotion={th.calm ? 'always' : 'never'}>
     {bg}
-    <header className="top"><div style={{display: 'flex', gap: 12, alignItems: 'center'}}><div onClick={() => setTab(4)} style={{cursor: 'pointer'}}>{avatarUrl ? <img src={avatarUrl} className="logo av" alt=""/> : md.avatar_emoji ? <span className="logo av">{md.avatar_emoji}</span> : <img src="/logo.png" className="logo" alt="TGarage"/>}</div><div><small className="mu">{greet()}{nm ? `, ${nm}` : ''}{car ? ` · ${car.brand} ${car.model || ''}` : ''}</small><h1>{TABS[tab][1]}</h1></div></div>
+    <header className="top"><div style={{display: 'flex', gap: 12, alignItems: 'center'}}><div onClick={() => go(4)} style={{cursor: 'pointer'}}>{avatarUrl ? <img src={avatarUrl} className="logo av" alt=""/> : md.avatar_emoji ? <span className="logo av">{md.avatar_emoji}</span> : <img src="/logo.png" className="logo" alt={APP}/>}</div><div><small className="mu">{greet()}{nm ? `, ${nm}` : ''}{car ? ` · ${car.brand} ${car.model || ''}` : ''}</small><h1>{TABS[tab][1]}</h1></div></div>
       <div style={{display: 'flex', gap: 8}}><motion.button className="icon" whileTap={{scale: .85}} onClick={() => setAl(true)} aria-label="Notificări">🔔{alerts.length > 0 && <i className="badge">{alerts.length}</i>}</motion.button><motion.button className="icon" whileTap={{scale: .85, rotate: 60}} onClick={() => setCfg(true)} aria-label="Setări">⚙️</motion.button></div></header>
-    <main>{err && <p style={{color: 'var(--ur)'}}>Eroare: {err}. Ai rulat schema.sql în Supabase?</p>}
+    <main onTouchStart={swStart} onTouchEnd={swEnd}>{err && <p style={{color: 'var(--ur)'}}>Eroare: {err}. Ai rulat schema.sql în Supabase?</p>}
       {tab === 0 && !nm && <NamePrompt/>}
-      <AnimatePresence mode="wait"><motion.div className="page" key={tab} initial={{opacity: 0, y: 24}} animate={{opacity: 1, y: 0}} exit={{opacity: 0}} transition={{type: 'spring', stiffness: 260, damping: 26}}>{page}</motion.div></AnimatePresence></main>
+      <AnimatePresence mode="wait" custom={dir}><motion.div className="page" key={tab} custom={dir} variants={slide} initial="in" animate="mid" exit="out" transition={{type: 'spring', stiffness: 300, damping: 30}}>{page}</motion.div></AnimatePresence></main>
     {car && tab !== 4 && <motion.button className="fab" whileTap={{scale: .92}} initial={{scale: 0}} animate={{scale: 1}} onClick={() => setAdd(true)}>+ Adaugă</motion.button>}
-    {(add || edit) && car && <AddSheet key={edit ? edit.row.id : 'new'} D={D} car={car} parts={parts} tab={tab} edit={edit} onClose={closeAdd} onSaved={async () => { closeAdd(); await reload(car.id) }}/>}
+    {(add || edit) && car && <AddSheet key={edit ? edit.row.id : 'new'} D={D} car={car} parts={parts} tab={tab} edit={edit} onClose={closeAdd} onSaved={async k => { closeAdd(); await reload(car.id); if (k === 'service' || k === 'fuel' || k === 'expense') setBurst(Date.now()) }} onKeep={async () => { await reload(car.id); setBurst(Date.now()) }}/>}
     {al && <Alerts list={alerts} onClose={() => setAl(false)}/>}
     {toast && <div className="toast">{toast}</div>}
+    {burst > 0 && !th.calm && <Confetti key={burst}/>}
+    {tour && <Tour onDone={() => { try { localStorage.setItem('tgarage.tour', '1') } catch {} setTour(false) }}/>}
     {cfg && <Settings th={th} setTh={setTh} setImg={setImg} onClose={() => setCfg(false)}/>}
-    <nav>{TABS.map(([ic, l], k) => <button key={l} className={k === tab ? 'on' : ''} onClick={() => setTab(k)}>
+    <nav>{TABS.map(([ic, l], k) => <button key={l} className={k === tab ? 'on' : ''} onClick={() => go(k)}>
       {k === tab && <motion.span layoutId="pill" className="pill" transition={{type: 'spring', stiffness: 400, damping: 32}}/>}<span>{ic}</span><span>{l}</span></button>)}</nav>
   </MotionConfig>
 }
