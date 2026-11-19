@@ -1,5 +1,5 @@
 import {useCallback, useEffect, useRef, useState} from 'react'
-import {motion, AnimatePresence, MotionConfig} from 'framer-motion'
+import {motion, AnimatePresence, MotionConfig, animate, useMotionValue} from 'framer-motion'
 import {supabase as sb} from './lib/supabase'
 import {useTheme} from './lib/theme'
 import {DEFAULT_PRICES} from './data'
@@ -21,7 +21,7 @@ import Confetti from './components/Confetti'
 import Tour from './components/Tour'
 import {APP} from './brand'
 
-const TABS = [['🚗', 'Garaj 3D'], ['🔧', 'Piese & AI'], ['⛽', 'Consum'], ['📄', 'Acte'], ['👤', 'Cont']]
+const TABS = [['🚗', 'Garaj'], ['🔧', 'Piese'], ['⛽', 'Consum'], ['📄', 'Acte'], ['👤', 'Cont']]
 const T = ['vehicles', 'vehicle_parts', 'maintenance_logs', 'fuel_logs', 'documents', 'prices']
 const empty = {cars: [], parts: [], logs: [], fuel: [], docs: [], prices: DEFAULT_PRICES, pdates: {}, raw: {}, exp: [], expOk: true, uid: null}
 
@@ -35,6 +35,7 @@ export default function App() {
   const [carId, setCarId0] = useState(() => { try { return localStorage.getItem('tgarage.car') } catch { return null } }), [tab, setTab] = useState(0), [add, setAdd] = useState(false), [edit, setEdit] = useState(null), [cfg, setCfg] = useState(false), [loaded, setLoaded] = useState(false), [gate, setGate] = useState('check'), [al, setAl] = useState(false), [toast, setToast] = useState(''), [dir, setDir] = useState(1), [burst, setBurst] = useState(0), [tour, setTour] = useState(() => { try { return !localStorage.getItem('tgarage.tour') } catch { return false } }), [err, setErr] = useState('')
   const {th, setTh, img, setImg, t} = useTheme()
   const touch = useRef(null)
+  const px = useMotionValue(0)
   const [ak, setAk0] = useState(loadAk)
   const setAk = fn => setAk0(cur => { const n = fn(cur); try { localStorage.setItem(AK, JSON.stringify(n)) } catch {} return n })
   const md = s?.user?.user_metadata || {}, nm = md.name, avatarUrl = useUrl(md.avatar_photo)
@@ -76,11 +77,18 @@ export default function App() {
   const car = D.cars.find(c => c.id === carId) || D.cars[0]
   const parts = car ? D.parts.filter(p => p.vehicle_id === car.id) : []
   const go = k => { setDir(k >= tab ? 1 : -1); setTab(k) }
-  const swStart = e => { const p = e.touches[0]; touch.current = e.target.closest('canvas,input,select,textarea,.chips,.sheet,button') ? null : {x: p.clientX, y: p.clientY} }
+  const swStart = e => { const p = e.touches[0]; touch.current = e.target.closest('canvas,input,select,textarea,.chips,.sheet,button') ? null : {x: p.clientX, y: p.clientY, lock: null} }
+  const swMove = e => {
+    const o = touch.current; if (!o) return
+    const p = e.touches[0], dx = p.clientX - o.x, dy = p.clientY - o.y
+    if (!o.lock && (Math.abs(dx) > 12 || Math.abs(dy) > 12)) o.lock = Math.abs(dx) > Math.abs(dy) * 1.2 ? 'x' : 'y'
+    if (o.lock === 'x') { const edge = (tab === 0 && dx > 0) || (tab === TABS.length - 1 && dx < 0); px.set(dx * (edge ? .15 : .5)) }
+  }
   const swEnd = e => {
     const o = touch.current; touch.current = null; if (!o) return
-    const p = e.changedTouches[0], dx = p.clientX - o.x, dy = p.clientY - o.y
-    if (Math.abs(dx) > 70 && Math.abs(dx) > Math.abs(dy) * 1.6) { const n = tab + (dx < 0 ? 1 : -1); if (n >= 0 && n < TABS.length) go(n) }
+    const p = e.changedTouches[0], dx = p.clientX - o.x
+    animate(px, 0, {type: 'spring', stiffness: 320, damping: 32})
+    if (o.lock === 'x' && Math.abs(dx) > 60) { const n = tab + (dx < 0 ? 1 : -1); if (n >= 0 && n < TABS.length) go(n) }
   }
   const flash = m => { setToast(m); setTimeout(() => setToast(''), 2200) }
   const reload = async p => { await load(p); flash('Actualizat ✓') }
@@ -96,9 +104,9 @@ export default function App() {
     {bg}
     <header className="top"><div style={{display: 'flex', gap: 12, alignItems: 'center'}}><div onClick={() => go(4)} style={{cursor: 'pointer'}}>{avatarUrl ? <img src={avatarUrl} className="logo av" alt=""/> : md.avatar_emoji ? <span className="logo av">{md.avatar_emoji}</span> : <img src="/logo.png" className="logo" alt={APP}/>}</div><div><small className="mu">{greet()}{nm ? `, ${nm}` : ''}{car ? ` · ${car.brand} ${car.model || ''}` : ''}</small><h1>{TABS[tab][1]}</h1></div></div>
       <div style={{display: 'flex', gap: 8}}><motion.button className="icon" whileTap={{scale: .85}} onClick={() => setAl(true)} aria-label="Notificări">🔔{unread > 0 && <i className="badge">{unread}</i>}</motion.button><motion.button className="icon" whileTap={{scale: .85, rotate: 60}} onClick={() => setCfg(true)} aria-label="Setări">⚙️</motion.button></div></header>
-    <main onTouchStart={swStart} onTouchEnd={swEnd}>{err && <p style={{color: 'var(--ur)'}}>Eroare: {err}. Ai rulat schema.sql în Supabase?</p>}
+    <main onTouchStart={swStart} onTouchMove={swMove} onTouchEnd={swEnd} onTouchCancel={swEnd} style={{touchAction: 'pan-y'}}>{err && <p style={{color: 'var(--ur)'}}>Eroare: {err}. Ai rulat schema.sql în Supabase?</p>}
       {tab === 0 && !nm && <NamePrompt/>}
-      <AnimatePresence mode="wait" custom={dir}><motion.div className="page" key={tab} custom={dir} variants={slide} initial="in" animate="mid" exit="out" transition={{type: 'spring', stiffness: 300, damping: 30}}>{page}</motion.div></AnimatePresence></main>
+      <motion.div style={{x: px}}><AnimatePresence mode="wait" custom={dir}><motion.div className="page" key={tab} custom={dir} variants={slide} initial="in" animate="mid" exit="out" transition={{type: 'spring', stiffness: 300, damping: 30}}>{page}</motion.div></AnimatePresence></motion.div></main>
     {car && tab !== 4 && <motion.button className="fab" whileTap={{scale: .92}} initial={{scale: 0}} animate={{scale: 1}} onClick={() => setAdd(true)}>+ Adaugă</motion.button>}
     {(add || edit) && car && <AddSheet key={edit ? edit.row.id : 'new'} D={D} car={car} parts={parts} tab={tab} edit={edit} onClose={closeAdd} onSaved={async k => { closeAdd(); await reload(car.id); if (k === 'service' || k === 'fuel' || k === 'expense') setBurst(Date.now()) }} onKeep={async () => { await reload(car.id); setBurst(Date.now()) }}/>}
     {al && <Alerts list={alerts} read={ak.read} onRead={readA} onDel={delA} onReadAll={readAll} onDelAll={delAll} onClose={() => setAl(false)}/>}

@@ -1,6 +1,7 @@
 import React from 'react'
 import {createRoot} from 'react-dom/client'
-import {configOk} from './lib/supabase'
+import {configOk, mode} from './lib/supabase'
+import Chooser from './tabs/Chooser'
 import './index.css'
 
 class EB extends React.Component {
@@ -11,5 +12,6 @@ class EB extends React.Component {
   }
 }
 const root = createRoot(document.getElementById('root'))
-if (!configOk) root.render(<main><div className="card"><h2>Configurare lipsă</h2><p>Variabilele <b>VITE_SUPABASE_URL</b> (adresa <i>https://…supabase.co</i>) și <b>VITE_SUPABASE_ANON_KEY</b> nu sunt setate corect. Verifică-le în Netlify, apoi fă „Clear cache and deploy site”.</p></div></main>)
+if (!mode) root.render(<Chooser/>)
+else if (mode === 'cloud' && !configOk) root.render(<main><div className="card"><h2>Configurare lipsă</h2><p>Variabilele <b>VITE_SUPABASE_URL</b> (adresa <i>https://…supabase.co</i>) și <b>VITE_SUPABASE_ANON_KEY</b> nu sunt setate corect. Verifică-le în Vercel (Settings → Environment Variables), apoi fă Redeploy.</p></div></main>)
 else import('./App').then(m => root.render(<EB><m.default/></EB>))

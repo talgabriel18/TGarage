@@ -59,3 +59,6 @@ img{-webkit-user-drag:none}
 .eyebrow{font-size:12px;font-weight:700;letter-spacing:.14em;color:var(--ac)}
 .priv-t{font-size:20px;font-weight:750;margin-top:6px;letter-spacing:-.3px}
 .plan{border:1px solid var(--bd);border-radius:16px;padding:12px;margin-top:8px;background:var(--gbtn)}
+.mrow{display:flex;align-items:center;gap:12px;padding:13px 2px;border-bottom:1px solid var(--bd);cursor:pointer}
+.mrow:last-child{border-bottom:0}
+.mi{font-size:22px;width:30px;text-align:center}
