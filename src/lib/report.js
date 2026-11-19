@@ -1,5 +1,6 @@
 import {ro, ron, dt, daysTo, wear} from './util'
 import {pdfFromJpegs} from './pdf'
+import {APP} from '../brand'
 
 const W = 1240, H = 1754, M = 90, F = '-apple-system, "Segoe UI", Helvetica, Arial, sans-serif'
 const loadImg = src => new Promise(res => { const i = new Image(); i.crossOrigin = 'anonymous'; i.onload = () => res(i); i.onerror = () => res(null); i.src = src })
@@ -17,7 +18,7 @@ export async function buildReport({car, docs, logs, parts, photoUrl}) {
     g.fillStyle = '#0b0d12'; g.fillRect(0, 0, W, 150)
     if (logo) { g.fillStyle = '#ffffff'; rr(M, 28, 94, 94, 22); g.drawImage(logo, M + 6, 34, 82, 82) }
     g.fillStyle = '#ffffff'; font(46, 700); g.fillText('Raport vânzare auto', M + 122, 80)
-    g.fillStyle = '#9aa3b8'; font(27); g.fillText(`TGarage · ${new Date().toLocaleDateString('ro-RO')}`, M + 122, 120)
+    g.fillStyle = '#9aa3b8'; font(27); g.fillText(`${APP} · ${new Date().toLocaleDateString('ro-RO')}`, M + 122, 120)
     y = 215
   }
   const need = h => { if (y + h > H - 130) page() }
@@ -58,7 +59,7 @@ export async function buildReport({car, docs, logs, parts, photoUrl}) {
   y += 20; h2('Stare estimată a pieselor')
   parts.forEach(p => { const w = wear(p, car); row([[p.name, M, 'left', 560], [`ultima: ${dt(p.last_date)} · ${ro(p.last_odo)} km`, M + 600, 'left', 360], [`${Math.round(w.pct * 100)}%`, W - M, 'right']]) })
   need(70); font(22); g.fillStyle = '#6b7280'; g.fillText('Valorile pieselor sunt estimări orientative, calculate din datele introduse de proprietar.', M, y + 10)
-  cvs.forEach((c, i) => { const x = c.getContext('2d'); x.fillStyle = '#9aa3b8'; x.font = `22px ${F}`; x.fillText(`Pagina ${i + 1} din ${cvs.length} · Date introduse de proprietar în TGarage`, M, H - 60) })
+  cvs.forEach((c, i) => { const x = c.getContext('2d'); x.fillStyle = '#9aa3b8'; x.font = `22px ${F}`; x.fillText(`Pagina ${i + 1} din ${cvs.length} · Date introduse de proprietar în ${APP}`, M, H - 60) })
   const pages = []
   for (const c of cvs) { const b = await new Promise(r => c.toBlob(r, 'image/jpeg', .88)); pages.push({w: W, h: H, data: new Uint8Array(await b.arrayBuffer())}) }
   return pdfFromJpegs(pages)
