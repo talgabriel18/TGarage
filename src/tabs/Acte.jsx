@@ -79,9 +79,15 @@ export default function Acte({D, car, reload, onEdit}) {
       <div className="grid"><button className="g" onClick={() => exportCsv(D, car)}>Exportă CSV</button><button className="g" onClick={() => document.getElementById('cf').click()}>Importă alimentări</button></div>
       <button className="g sm" style={{marginTop: 8}} onClick={templateCsv}>Descarcă modelul CSV</button>
       <input id="cf" type="file" accept=".csv,text/csv,text/plain" hidden onChange={importCsv}/>{msg && <p className="mu">{msg}</p>}</div>
-    <div className="card"><b>Setări și backup</b><div className="grid" style={{marginTop: 8}}><button className="g" onClick={backup}>Exportă JSON</button><button className="g" onClick={() => document.getElementById('rf').click()}>Importă JSON</button></div>
-      <input id="rf" type="file" accept=".json" hidden onChange={restore}/>{msg && <p className="mu">{msg}</p>}
-      <button className="g w" style={{marginTop: 8}} onClick={() => sb.auth.signOut()}>Deconectare</button></div>
+    <div className="card"><b>💾 Backup JSON</b>
+      <p className="mu" style={{margin: '6px 0'}}>Backup-ul este o copie completă a datelor tale scrise (mașini, piese, service, alimentări, cheltuieli, acte și prețuri), într-un singur fișier cu extensia .json.</p>
+      <ul className="mu" style={{margin: '0 0 10px', paddingLeft: 18, fontSize: 13}}>
+        <li><b>Exportă</b> = descarcă fișierul pe telefon. Păstrează-l într-un loc sigur (Fișiere, iCloud, email): conține informațiile tale personale.</li>
+        <li><b>Importă</b> = adaugă înapoi datele dintr-un fișier. Nu șterge ce ai deja; dacă un element există, e înlocuit cu cel din fișier.</li>
+        <li>Îl poți folosi pentru o copie de siguranță, pentru a muta datele pe alt telefon sau din modul Gratuit în Pro.</li>
+        <li>Pozele și bonurile nu sunt incluse, doar datele scrise.</li></ul>
+      <div className="grid"><button className="g" onClick={backup}>Exportă JSON</button><button className="g" onClick={() => document.getElementById('rf').click()}>Importă JSON</button></div>
+      <input id="rf" type="file" accept=".json" hidden onChange={restore}/>{msg && <p className="mu">{msg}</p>}</div>
   {yr && <YearReview D={D} car={car} onClose={() => setYr(false)}/>}
   </>
 }

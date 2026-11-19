@@ -23,7 +23,7 @@ export default function Garage({D, car, setCar, reload, stage}) {
   const avg = parts.length ? parts.reduce((a, p) => a + p.pct, 0) / parts.length : 0
   const urgent = [...parts].sort((a, b) => a.pct - b.pct).filter(p => p.pct < .25).slice(0, 3)
   const soon = D.docs.filter(d => d.vehicle_id === car?.id && daysTo(d.expires_on) <= 30)
-  const rd = parts.length === 0 ? ['Adaugă piese în Piese & AI', '🔧'] : urgent.some(p => p.pct < .1) ? ['Necesită service', '🚨'] : avg > .6 && urgent.length === 0 ? ['Gata de drum', '✅'] : ['Verifică piesele', '⚠️']
+  const rd = parts.length === 0 ? ['Adaugă piese în tab-ul Piese', '🔧'] : urgent.some(p => p.pct < .1) ? ['Necesită service', '🚨'] : avg > .6 && urgent.length === 0 ? ['Gata de drum', '✅'] : ['Verifică piesele', '⚠️']
   return <>
     
     {D.cars.length > 0 && <select value={car?.id} onChange={e => { setCar(e.target.value); setPick(null) }}>{D.cars.map(c => <option key={c.id} value={c.id}>{c.brand} {c.model} · {c.powertrain} · {c.body}</option>)}</select>}

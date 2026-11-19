@@ -1,6 +1,6 @@
 import {useEffect, useState} from 'react'
 import {motion, AnimatePresence} from 'framer-motion'
-import {supabase as sb} from '../lib/supabase'
+import {supabase as sb, mode, switchMode} from '../lib/supabase'
 import {upload, useUrl} from '../lib/media'
 
 const EMOJI = ['🚗', '🏎️', '🚙', '🛻', '⚡', '🔧', '🏁', '🛞', '🚘', '🦊', '🐺', '🌟']
@@ -51,7 +51,7 @@ export default function Cont({user, onTheme}) {
   const md = user.user_metadata || {}
   const [f, setF] = useState({name: md.name || '', full_name: md.full_name || '', phone: md.phone || '', city: md.city || ''})
   const [msg, setMsg] = useState({}), say = (k, m) => setMsg(x => ({...x, [k]: m}))
-  const [mail, setMail] = useState(''), [p1, setP1] = useState(''), [p2, setP2] = useState(''), [sub, setSub] = useState('personal')
+  const [mail, setMail] = useState(''), [p1, setP1] = useState(''), [p2, setP2] = useState(''), [page, setPage] = useState(null)
   const photo = useUrl(md.avatar_photo)
   const upd = async (data, k) => { const {error} = await sb.auth.updateUser({data}); say(k, error ? error.message : 'Salvat ✓') }
   const upPhoto = async e => {
@@ -76,40 +76,61 @@ export default function Cont({user, onTheme}) {
     say('x', a.error || b.error ? (a.error || b.error).message : 'Datele au fost șterse. Reîncarcă aplicația.')
   }
   const set = k => ({value: f[k], onChange: e => setF({...f, [k]: e.target.value})})
+  const local = mode === 'local'
+  const swap = () => {
+    const txt = local ? 'Treci la Pro? Datele de pe acest telefon rămân aici. Ca să le muți în cont: exportă acum Backup JSON (tab Acte), apoi importă-l după ce te autentifici.' : 'Treci la modul gratuit? Datele din cloud rămân în contul tău. În modul gratuit începi cu un spațiu gol, pe acest telefon.'
+    if (window.confirm(txt)) switchMode(local ? 'cloud' : 'local')
+  }
+  const Row = ({i, t, s, onClick}) => <div className="mrow" onClick={onClick}><span className="mi">{i}</span><span style={{flex: 1}}><b>{t}</b>{s && <><br/><small className="mu">{s}</small></>}</span><span className="mu">›</span></div>
+  const Back = ({t}) => <div className="row" style={{justifyContent: 'flex-start', gap: 10, margin: '2px 0 8px'}}><button className="g sm" onClick={() => setPage(null)}>‹ Înapoi</button><b style={{fontSize: 18}}>{t}</b></div>
+  const face = photo ? <img src={photo} alt="" style={{width: '100%', height: '100%', objectFit: 'cover'}}/> : md.avatar_emoji || <img src="/logo.png" alt="" style={{width: '100%'}}/>
   return <>
-    <div className="card"><div className="eyebrow">● CONFIDENȚIALITATE</div>
-      <div className="priv-t">Datele tale sunt doar ale tale.</div>
-      <p className="mu" style={{margin: '4px 0 0'}}>Mașinile, service-urile, cheltuielile și pozele sunt salvate în contul tău și le vezi doar tu. Nu avem reclame, nu vindem date și nu urmărim ce faci în aplicație. Estimările pieselor și raportul PDF se calculează chiar pe telefonul tău.</p>
-      <small className="mu" style={{display: 'block', marginTop: 8}}>Singura excepție: butonul „Din VIN” trimite seria de șasiu către un serviciu public (NHTSA), doar când îl apeși.</small></div>
-    <div className="chips">{[['personal', '👤 Personal'], ['sec', '🔐 Securitate'], ['priv', '🛡️ Confidențialitate']].map(([k, l]) => <button key={k} className={sub === k ? 'on' : 'g'} onClick={() => setSub(k)}>{l}</button>)}</div>
-    <AnimatePresence mode="wait"><motion.div key={sub} initial={{opacity: 0, y: 12}} animate={{opacity: 1, y: 0}} exit={{opacity: 0}} transition={{duration: .18}}>
-      {sub === 'personal' && <>
+    {!page && <>
+      <div className="card" style={{display: 'flex', alignItems: 'center', gap: 12, padding: 12}}>
+        <div className="logo av" style={{width: 46, height: 46, fontSize: 24}}>{face}</div>
+        <div style={{flex: 1, minWidth: 0}}><div style={{fontWeight: 700, fontSize: 17}}>{md.name || md.full_name || 'Contul tău'}</div><small className="mu">{local ? 'Mod gratuit · pe dispozitiv' : user.email}</small></div></div>
+      <div className="card" style={{padding: 12}}><div className="eyebrow">● CONFIDENȚIALITATE</div>
+        <div style={{fontWeight: 700, marginTop: 4}}>{local ? 'Nimic nu pleacă de pe acest telefon fără să ceri tu.' : 'Datele tale sunt doar ale tale.'}</div>
+        <small className="mu">{local ? 'Datele, estimările și PDF-urile rămân pe dispozitiv. Fără cont, reclame sau urmărire.' : 'Salvate în contul tău, vizibile doar ție. Fără reclame sau urmărire.'}</small></div>
+      <div className="card" style={{padding: '4px 14px'}}>
+        <Row i="👤" t="Detalii personale" s="Nume, telefon, localitate, poză" onClick={() => setPage('personal')}/>
+        {!local && <Row i="🔐" t="Securitate" s="Email, parolă, verificare în doi pași" onClick={() => setPage('sec')}/>}
+        <Row i="🛡️" t="Confidențialitate și date" s={local ? 'Gratuit · pe dispozitiv' : 'Pro · cont și cloud'} onClick={() => setPage('priv')}/>
+        <Row i="🎨" t="Aspect și teme" s="Fundal, culoare, scena 3D" onClick={onTheme}/>
+        {!local && <Row i="🚪" t="Deconectare" onClick={() => sb.auth.signOut()}/>}
+      </div></>}
+    <AnimatePresence mode="wait">{page && <motion.div key={page} initial={{opacity: 0, x: 40}} animate={{opacity: 1, x: 0}} exit={{opacity: 0, x: -40}} transition={{duration: .2}}>
+      {page === 'personal' && <>
+        <Back t="Detalii personale"/>
         <div className="card" style={{textAlign: 'center'}}>
-          <motion.div key={md.avatar_emoji || photo || 'l'} initial={{scale: .6}} animate={{scale: 1}} transition={{type: 'spring', stiffness: 260, damping: 14}} className="logo big av" style={{margin: '0 auto'}}>
-            {photo ? <img src={photo} alt="" style={{width: '100%', height: '100%', objectFit: 'cover', borderRadius: 24}}/> : md.avatar_emoji || <img src="/logo.png" alt="" style={{width: '100%'}}/>}</motion.div>
-          <p style={{margin: '10px 0 2px', fontWeight: 700, fontSize: 18}}>{md.name || md.full_name || 'Contul tău'}</p><small className="mu">{user.email}</small>
+          <motion.div key={md.avatar_emoji || photo || 'l'} initial={{scale: .6}} animate={{scale: 1}} transition={{type: 'spring', stiffness: 260, damping: 14}} className="logo av" style={{width: 64, height: 64, fontSize: 34, margin: '0 auto'}}>{face}</motion.div>
           <div className="chips" style={{justifyContent: 'center', flexWrap: 'wrap', marginTop: 10}}>{EMOJI.map(e => <button key={e} className="g sm" style={{fontSize: 20}} onClick={() => upd({avatar_emoji: e, avatar_photo: null}, 'a')}>{e}</button>)}</div>
           <button className="g sm" onClick={() => document.getElementById('av').click()}>📷 Poză de profil</button>
           <input id="av" type="file" accept="image/*" hidden onChange={upPhoto}/>
           {msg.a && <p className="mu" style={{margin: '6px 0 0'}}>{msg.a}</p>}</div>
-        <div className="card"><b>👤 Date personale</b>
+        <div className="card"><b>Date personale</b>
           <input placeholder="Cum să te strig (ex. Gabriel)" {...set('name')}/><input placeholder="Nume complet" {...set('full_name')}/>
           <input placeholder="Telefon (opțional)" inputMode="tel" {...set('phone')}/><input placeholder="Localitate (opțional)" {...set('city')}/>
           <motion.button whileTap={{scale: .96}} className="w" style={{marginTop: 6}} onClick={() => upd({...f}, 'p')}>Salvează</motion.button>{msg.p && <p className="mu" style={{margin: '6px 0 0'}}>{msg.p}</p>}</div></>}
-      {sub === 'sec' && <>
+      {page === 'sec' && <>
+        <Back t="Securitate"/>
         <div className="card"><b>✉️ Schimbă emailul</b><p className="mu" style={{margin: '4px 0'}}>Acum: {user.email}</p>
           <input type="email" placeholder="Email nou" value={mail} onChange={e => setMail(e.target.value)}/><button className="w" onClick={changeMail}>Trimite link de confirmare</button>{msg.m && <p className="mu" style={{margin: '6px 0 0'}}>{msg.m}</p>}</div>
         <div className="card"><b>🔑 Schimbă parola</b>
           <input type="password" placeholder="Parolă nouă (min. 6 caractere)" value={p1} onChange={e => setP1(e.target.value)}/><input type="password" placeholder="Repetă parola" value={p2} onChange={e => setP2(e.target.value)}/>
           <button className="w" onClick={changePass}>Schimbă parola</button>{msg.w && <p className="mu" style={{margin: '6px 0 0'}}>{msg.w}</p>}</div>
         <Mfa/></>}
-      {sub === 'priv' && <>
+      {page === 'priv' && <>
+        <Back t="Confidențialitate și date"/>
         <div className="card"><b>📍 Unde îți sunt datele</b>
-          <p className="mu" style={{margin: '6px 0'}}>Acum, datele tale sunt salvate în contul tău din cloud, protejate prin autentificare (și prin 2FA, dacă îl activezi). Poți exporta oricând o copie: Acte → Backup JSON sau CSV.</p>
-          <div className="plan"><div className="row"><b>Gratuit · pe dispozitiv</b><span className="bd" style={{background: '#8886'}}>În curând</span></div><small className="mu">Totul rămâne pe telefonul tău, fără cont.</small></div>
-          <div className="plan"><div className="row"><b>Premium · cloud</b><span className="bd" style={{background: '#8886'}}>În curând</span></div><small className="mu">Copie sigură în cloud, sincronizare între dispozitive și recuperare dacă îți pierzi telefonul.</small></div></div>
-        <div className="card"><b>🗑️ Șterge datele</b><p className="mu" style={{margin: '6px 0'}}>Șterge toate mașinile, istoricul și pozele din contul tău. Acțiunea nu se poate anula.</p><button className="g w" onClick={wipe}>Șterge toate datele mele</button>{msg.x && <p className="mu" style={{margin: '6px 0 0'}}>{msg.x}</p>}</div></>}
-    </motion.div></AnimatePresence>
-    <div className="card"><b>⚙️ Aplicație</b><div className="grid" style={{marginTop: 8}}><button className="g" onClick={onTheme}>🎨 Aspect și teme</button><button className="g" onClick={() => sb.auth.signOut()}>Deconectare</button></div></div>
+          <p className="mu" style={{margin: '6px 0 0'}}>{local ? 'Sunt salvate doar pe acest dispozitiv, în browser. Nu le trimitem nicăieri. Dacă ștergi aplicația sau datele site-ului, se pierd. Exportă din când în când o copie (tab Acte → Backup JSON sau CSV). Pe iPhone, adaugă aplicația pe ecranul principal.' : 'Sunt salvate în contul tău din cloud, vizibile doar ție, cu autentificare (și cu 2FA, dacă îl activezi). Poți exporta oricând o copie (tab Acte → Backup JSON sau CSV).'}</p></div>
+        <div className="card"><b>Modul aplicației</b>
+          <div className="plan"><div className="row"><b>Gratuit · pe dispozitiv</b>{local && <span className="bd" style={{background: 'var(--ok)'}}>Activ</span>}</div><small className="mu">Fără cont. Totul rămâne pe acest telefon.</small></div>
+          <div className="plan"><div className="row"><b>Pro · cont și cloud</b>{!local && <span className="bd" style={{background: 'var(--ok)'}}>Activ</span>}</div><small className="mu">Cont cu email și parolă. Copie în cloud, sincronizare între dispozitive și recuperare dacă îți pierzi telefonul.</small></div>
+          <button className="g w" style={{marginTop: 10}} onClick={swap}>{local ? 'Treci la Pro (cont + cloud)' : 'Treci la modul gratuit (local)'}</button></div>
+        <div className="card"><b>🌐 Servicii externe</b>
+          <p className="mu" style={{margin: '6px 0 0'}}>Butonul „Din VIN” trimite seria de șasiu către un serviciu public (NHTSA), doar când îl apeși. Butoanele „cea mai apropiată benzinărie” deschid Google Maps. {local ? 'În afară de acestea, nimic nu pleacă de pe telefon.' : 'În afară de acestea, aplicația trimite doar datele tale către contul tău din cloud.'}</p></div>
+        <div className="card"><b>🗑️ Șterge datele</b><p className="mu" style={{margin: '6px 0'}}>Șterge toate mașinile, istoricul și pozele {local ? 'de pe acest telefon' : 'din contul tău'}. Acțiunea nu se poate anula.</p><button className="g w" onClick={wipe}>Șterge toate datele mele</button>{msg.x && <p className="mu" style={{margin: '6px 0 0'}}>{msg.x}</p>}</div></>}
+    </motion.div>}</AnimatePresence>
   </>
 }
