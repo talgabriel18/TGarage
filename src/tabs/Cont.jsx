@@ -1,5 +1,5 @@
 import {useEffect, useState} from 'react'
-import {motion} from 'framer-motion'
+import {motion, AnimatePresence} from 'framer-motion'
 import {supabase as sb} from '../lib/supabase'
 import {upload, useUrl} from '../lib/media'
 
@@ -39,7 +39,7 @@ function Mfa() {
     {en && <div style={{marginTop: 8}}>
       <p className="mu" style={{margin: '0 0 8px'}}>1. Scanează codul QR cu aplicația de autentificare (sau scrie cheia manual). Păstrează cheia într-un loc sigur.</p>
       <div style={{textAlign: 'center'}}><img src={en.totp.qr_code} alt="QR 2FA" style={{width: 190, height: 190, background: '#fff', borderRadius: 14, padding: 8}}/></div>
-      <p style={{wordBreak: 'break-all', fontFamily: 'monospace', fontSize: 13, textAlign: 'center'}}>{en.totp.secret}</p>
+      <p className="sel" style={{wordBreak: 'break-all', fontFamily: 'monospace', fontSize: 13, textAlign: 'center'}}>{en.totp.secret}</p>
       <p className="mu" style={{margin: '0 0 4px'}}>2. Scrie codul de 6 cifre afișat de aplicație:</p>
       <input inputMode="numeric" maxLength={6} placeholder="123456" value={code} onChange={e => setCode(e.target.value.replace(/\D/g, ''))}/>
       <div className="grid" style={{marginTop: 6}}><button className="g" onClick={cancel}>Anulează</button><button disabled={busy || code.length < 6} onClick={confirmCode}>Confirmă</button></div></div>}
@@ -51,7 +51,7 @@ export default function Cont({user, onTheme}) {
   const md = user.user_metadata || {}
   const [f, setF] = useState({name: md.name || '', full_name: md.full_name || '', phone: md.phone || '', city: md.city || ''})
   const [msg, setMsg] = useState({}), say = (k, m) => setMsg(x => ({...x, [k]: m}))
-  const [mail, setMail] = useState(''), [p1, setP1] = useState(''), [p2, setP2] = useState('')
+  const [mail, setMail] = useState(''), [p1, setP1] = useState(''), [p2, setP2] = useState(''), [sub, setSub] = useState('personal')
   const photo = useUrl(md.avatar_photo)
   const upd = async (data, k) => { const {error} = await sb.auth.updateUser({data}); say(k, error ? error.message : 'Salvat ✓') }
   const upPhoto = async e => {
@@ -77,25 +77,39 @@ export default function Cont({user, onTheme}) {
   }
   const set = k => ({value: f[k], onChange: e => setF({...f, [k]: e.target.value})})
   return <>
-    <div className="card" style={{textAlign: 'center'}}>
-      <motion.div key={md.avatar_emoji || photo || 'l'} initial={{scale: .6}} animate={{scale: 1}} transition={{type: 'spring', stiffness: 260, damping: 14}} className="logo big av" style={{margin: '0 auto'}}>
-        {photo ? <img src={photo} alt="" style={{width: '100%', height: '100%', objectFit: 'cover', borderRadius: 24}}/> : md.avatar_emoji || <img src="/logo.png" alt="" style={{width: '100%'}}/>}</motion.div>
-      <p style={{margin: '10px 0 2px', fontWeight: 700, fontSize: 18}}>{md.name || md.full_name || 'Contul tău'}</p><small className="mu">{user.email}</small>
-      <div className="chips" style={{justifyContent: 'center', flexWrap: 'wrap', marginTop: 10}}>{EMOJI.map(e => <button key={e} className="g sm" style={{fontSize: 20}} onClick={() => upd({avatar_emoji: e, avatar_photo: null}, 'a')}>{e}</button>)}</div>
-      <button className="g sm" onClick={() => document.getElementById('av').click()}>📷 Poză de profil</button>
-      <input id="av" type="file" accept="image/*" hidden onChange={upPhoto}/>
-      {msg.a && <p className="mu" style={{margin: '6px 0 0'}}>{msg.a}</p>}</div>
-    <div className="card"><b>👤 Date personale</b>
-      <input placeholder="Cum să te strig (ex. Gabriel)" {...set('name')}/><input placeholder="Nume complet" {...set('full_name')}/>
-      <input placeholder="Telefon (opțional)" inputMode="tel" {...set('phone')}/><input placeholder="Localitate (opțional)" {...set('city')}/>
-      <motion.button whileTap={{scale: .96}} className="w" style={{marginTop: 6}} onClick={() => upd({...f}, 'p')}>Salvează</motion.button>{msg.p && <p className="mu" style={{margin: '6px 0 0'}}>{msg.p}</p>}</div>
-    <div className="card"><b>✉️ Schimbă emailul</b><p className="mu" style={{margin: '4px 0'}}>Acum: {user.email}</p>
-      <input type="email" placeholder="Email nou" value={mail} onChange={e => setMail(e.target.value)}/><button className="w" onClick={changeMail}>Trimite link de confirmare</button>{msg.m && <p className="mu" style={{margin: '6px 0 0'}}>{msg.m}</p>}</div>
-    <div className="card"><b>🔑 Schimbă parola</b>
-      <input type="password" placeholder="Parolă nouă (min. 6 caractere)" value={p1} onChange={e => setP1(e.target.value)}/><input type="password" placeholder="Repetă parola" value={p2} onChange={e => setP2(e.target.value)}/>
-      <button className="w" onClick={changePass}>Schimbă parola</button>{msg.w && <p className="mu" style={{margin: '6px 0 0'}}>{msg.w}</p>}</div>
-    <Mfa/>
-    <div className="card"><b>🛡️ Confidențialitate</b><p className="mu" style={{margin: '6px 0'}}>Datele tale (mașini, service, alimentări, cheltuieli, poze) sunt stocate în contul tău și vizibile doar ție. Le poți exporta oricând (Acte → Backup JSON sau CSV) sau șterge.</p><button className="g w" onClick={wipe}>🗑️ Șterge toate datele mele</button>{msg.x && <p className="mu" style={{margin: '6px 0 0'}}>{msg.x}</p>}</div>
+    <div className="card"><div className="eyebrow">● CONFIDENȚIALITATE</div>
+      <div className="priv-t">Datele tale sunt doar ale tale.</div>
+      <p className="mu" style={{margin: '4px 0 0'}}>Mașinile, service-urile, cheltuielile și pozele sunt salvate în contul tău și le vezi doar tu. Nu avem reclame, nu vindem date și nu urmărim ce faci în aplicație. Estimările pieselor și raportul PDF se calculează chiar pe telefonul tău.</p>
+      <small className="mu" style={{display: 'block', marginTop: 8}}>Singura excepție: butonul „Din VIN” trimite seria de șasiu către un serviciu public (NHTSA), doar când îl apeși.</small></div>
+    <div className="chips">{[['personal', '👤 Personal'], ['sec', '🔐 Securitate'], ['priv', '🛡️ Confidențialitate']].map(([k, l]) => <button key={k} className={sub === k ? 'on' : 'g'} onClick={() => setSub(k)}>{l}</button>)}</div>
+    <AnimatePresence mode="wait"><motion.div key={sub} initial={{opacity: 0, y: 12}} animate={{opacity: 1, y: 0}} exit={{opacity: 0}} transition={{duration: .18}}>
+      {sub === 'personal' && <>
+        <div className="card" style={{textAlign: 'center'}}>
+          <motion.div key={md.avatar_emoji || photo || 'l'} initial={{scale: .6}} animate={{scale: 1}} transition={{type: 'spring', stiffness: 260, damping: 14}} className="logo big av" style={{margin: '0 auto'}}>
+            {photo ? <img src={photo} alt="" style={{width: '100%', height: '100%', objectFit: 'cover', borderRadius: 24}}/> : md.avatar_emoji || <img src="/logo.png" alt="" style={{width: '100%'}}/>}</motion.div>
+          <p style={{margin: '10px 0 2px', fontWeight: 700, fontSize: 18}}>{md.name || md.full_name || 'Contul tău'}</p><small className="mu">{user.email}</small>
+          <div className="chips" style={{justifyContent: 'center', flexWrap: 'wrap', marginTop: 10}}>{EMOJI.map(e => <button key={e} className="g sm" style={{fontSize: 20}} onClick={() => upd({avatar_emoji: e, avatar_photo: null}, 'a')}>{e}</button>)}</div>
+          <button className="g sm" onClick={() => document.getElementById('av').click()}>📷 Poză de profil</button>
+          <input id="av" type="file" accept="image/*" hidden onChange={upPhoto}/>
+          {msg.a && <p className="mu" style={{margin: '6px 0 0'}}>{msg.a}</p>}</div>
+        <div className="card"><b>👤 Date personale</b>
+          <input placeholder="Cum să te strig (ex. Gabriel)" {...set('name')}/><input placeholder="Nume complet" {...set('full_name')}/>
+          <input placeholder="Telefon (opțional)" inputMode="tel" {...set('phone')}/><input placeholder="Localitate (opțional)" {...set('city')}/>
+          <motion.button whileTap={{scale: .96}} className="w" style={{marginTop: 6}} onClick={() => upd({...f}, 'p')}>Salvează</motion.button>{msg.p && <p className="mu" style={{margin: '6px 0 0'}}>{msg.p}</p>}</div></>}
+      {sub === 'sec' && <>
+        <div className="card"><b>✉️ Schimbă emailul</b><p className="mu" style={{margin: '4px 0'}}>Acum: {user.email}</p>
+          <input type="email" placeholder="Email nou" value={mail} onChange={e => setMail(e.target.value)}/><button className="w" onClick={changeMail}>Trimite link de confirmare</button>{msg.m && <p className="mu" style={{margin: '6px 0 0'}}>{msg.m}</p>}</div>
+        <div className="card"><b>🔑 Schimbă parola</b>
+          <input type="password" placeholder="Parolă nouă (min. 6 caractere)" value={p1} onChange={e => setP1(e.target.value)}/><input type="password" placeholder="Repetă parola" value={p2} onChange={e => setP2(e.target.value)}/>
+          <button className="w" onClick={changePass}>Schimbă parola</button>{msg.w && <p className="mu" style={{margin: '6px 0 0'}}>{msg.w}</p>}</div>
+        <Mfa/></>}
+      {sub === 'priv' && <>
+        <div className="card"><b>📍 Unde îți sunt datele</b>
+          <p className="mu" style={{margin: '6px 0'}}>Acum, datele tale sunt salvate în contul tău din cloud, protejate prin autentificare (și prin 2FA, dacă îl activezi). Poți exporta oricând o copie: Acte → Backup JSON sau CSV.</p>
+          <div className="plan"><div className="row"><b>Gratuit · pe dispozitiv</b><span className="bd" style={{background: '#8886'}}>În curând</span></div><small className="mu">Totul rămâne pe telefonul tău, fără cont.</small></div>
+          <div className="plan"><div className="row"><b>Premium · cloud</b><span className="bd" style={{background: '#8886'}}>În curând</span></div><small className="mu">Copie sigură în cloud, sincronizare între dispozitive și recuperare dacă îți pierzi telefonul.</small></div></div>
+        <div className="card"><b>🗑️ Șterge datele</b><p className="mu" style={{margin: '6px 0'}}>Șterge toate mașinile, istoricul și pozele din contul tău. Acțiunea nu se poate anula.</p><button className="g w" onClick={wipe}>Șterge toate datele mele</button>{msg.x && <p className="mu" style={{margin: '6px 0 0'}}>{msg.x}</p>}</div></>}
+    </motion.div></AnimatePresence>
     <div className="card"><b>⚙️ Aplicație</b><div className="grid" style={{marginTop: 8}}><button className="g" onClick={onTheme}>🎨 Aspect și teme</button><button className="g" onClick={() => sb.auth.signOut()}>Deconectare</button></div></div>
   </>
 }
