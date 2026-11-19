@@ -1,49 +1,33 @@
 # TGarage
-Aplicatie in romana pentru intretinere auto, uzura prezisa si consum (benzina, diesel, GPL, hibrid, PHEV, electric). Date in cloud (Supabase), pe mai multe masini.
+Aplicatie in romana pentru intretinere auto: piese cu estimari, consum, cheltuieli, acte, raport PDF. Scena 3D, mai multe masini.
 
-## Test local (laptop)
-1. Instaleaza Node.js LTS. In acest folder: `npm install`
-2. Copiaza `.env.example` in `.env` si completeaza cele 2 valori din Supabase (Settings > API).
-3. `npm run dev` si deschide adresa afisata.
+## Doua moduri (se aleg la prima deschidere)
+- **Gratuit · pe dispozitiv**: fara cont, datele raman in browserul telefonului (localStorage + IndexedDB). Se pierd daca stergi aplicatia sau datele site-ului; se poate face Backup JSON.
+- **Pro · cont si cloud**: cont cu email si parola (+ 2FA), date in Supabase. Plata nu este implementata: deocamdata alegerea Pro doar activeaza autentificarea.
+Modul se schimba din Cont > Confidentialitate si date.
 
-## Supabase
-1. Proiect nou > SQL Editor > ruleaza tot `supabase/schema.sql`.
-2. Authentication > URL Configuration: pune adresa site-ului (Netlify) la Site URL. Pentru test local adauga `http://localhost:5173` la Redirect URLs.
-3. Authentication > Providers > Email: daca nu vrei confirmare prin email, dezactiveaza "Confirm email".
-4. **Dupa ce iti creezi contul**: Authentication > Sign In / Providers > dezactiveaza "Allow new users to sign up", ca sa nu-si poata face altcineva cont.
+## Test local
+1. Node.js LTS. In acest folder: `npm install`
+2. `.env` (dupa `.env.example`) cu `VITE_SUPABASE_URL` si `VITE_SUPABASE_ANON_KEY` (necesare doar pentru modul Pro).
+3. `npm run dev`
 
-## Publicare
-1. Urca folderul pe GitHub (nu urca `.env`).
-2. Netlify > Add new site > Import from Git. Setarile sunt in `netlify.toml`.
-3. Site configuration > Environment variables: adauga `VITE_SUPABASE_URL` si `VITE_SUPABASE_ANON_KEY`.
-4. Pe iPhone: Safari > Distribuie > Adauga pe ecranul principal.
+## Supabase (modul Pro)
+1. Proiect nou > SQL Editor > ruleaza `supabase/schema.sql` (pentru cheltuieli pe un proiect mai vechi: `supabase/migration-v7.sql`).
+2. Authentication > URL Configuration: adresa site-ului la Site URL.
+3. Authentication > Providers > Email: "Confirm email" dupa preferinta. Multi-Factor (TOTP) activ pentru 2FA.
+4. Dupa ce iti creezi contul, poti dezactiva inscrierile noi.
+
+## Publicare pe Vercel
+1. Urca proiectul pe GitHub.
+2. vercel.com > Add New > Project > importa repository-ul (Vite e recunoscut automat: `npm run build`, folder `dist`).
+3. Environment Variables: `VITE_SUPABASE_URL`, `VITE_SUPABASE_ANON_KEY`. Apoi Deploy.
+4. Planul gratuit Vercel (Hobby) e doar pentru uz necomercial.
 
 ## Modele 3D
-Vezi `public/models/CITESTE.txt`. Pozitiile punctelor pulsatorii si rotatia modelelor se ajusteaza in `src/data.js` (HOT_OVERRIDE, ROT).
-
-## Aspect
-Icoana ⚙️ din colt deschide Setari: fundal (7 teme + poza ta), culoare accent, animatii reduse. Se salveaza pe dispozitiv.
-
-## Catalog si baza de masini
-`src/catalog.js` (piese cu denumire tehnica, intervale km/luni) si `src/carsdb.js` (marci si modele cu caroserie si motorizari). Pot fi extinse prin adaugarea de randuri in aceleasi fisiere. Marcile sau modelele lipsa se pot scrie oricum manual.
-
-## Notificari
-Icoana 🔔 arata ce e de rezolvat (acte care expira, piese uzate, preturi vechi). Memento-uri reale pe telefon: tab Acte > "Calendar (acte + service)" (fisier .ics cu alerta cu 14 zile inainte). Notificari push in fundal nu sunt incluse (cer server).
-
-## VIN
-Butonul "Din VIN" foloseste serviciul public NHTSA vPIC; pentru masini europene poate returna date partiale.
-
-## Cheltuieli, calculator, rezumat, CSV
-Pentru cheltuieli generale ruleaza o singura data `supabase/migration-v7.sql` in Supabase (SQL Editor). Restul (calculator de drum, "Anul tau in cifre", import/export CSV) nu cer nimic in plus.
-
-## Logo si scene
-Logo-ul e in `public/logo.png` si `public/icon-*.png` (inlocuieste-le cu un PNG mai mare pentru claritate maxima). Scena 3D (Studio, Garaj, Neon) se alege din Setari.
-
-## Cont
-Tab-ul Cont: profil (nume, poza/emoji), email, parola, 2FA (TOTP), tema. 2FA se ceruta la autentificare in aplicatie. Parola uitata: link pe email.
+`public/models/CITESTE.txt`. Pozitiile punctelor si rotatia modelelor: `src/data.js` (HOT_OVERRIDE, ROT).
 
 ## Redenumire
-Numele e in `src/brand.js`. Schimba-l acolo, apoi `<title>` si `apple-mobile-web-app-title` din `index.html` si `name` din `public/manifest.webmanifest`.
+Numele e in `src/brand.js`, plus `<title>` si `apple-mobile-web-app-title` din `index.html` si `name` din `public/manifest.webmanifest`.
 
-## Preturi
-Se editeaza manual in tab-ul Consum (cu data ultimei modificari). Butoanele "cea mai apropiata benzinarie" deschid Google Maps.
+## Date si import/export
+`src/catalog.js` (piese), `src/carsdb.js` (masini), Backup JSON si CSV in tab-ul Acte.
