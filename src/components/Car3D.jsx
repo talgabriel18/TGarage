@@ -1,5 +1,5 @@
 import {Canvas, useFrame, useThree} from '@react-three/fiber'
-import {OrbitControls, useGLTF, useTexture, Html} from '@react-three/drei'
+import {OrbitControls, useGLTF, useTexture} from '@react-three/drei'
 import * as THREE from 'three'
 import React, {Suspense, useEffect, useMemo, useRef, useState} from 'react'
 import {BODY, ROT} from '../data'
@@ -146,7 +146,7 @@ function Rig({focus, controls}) {
   return null
 }
 
-export default function Car3D({car, parts, xray, focus, onPick, stage, pick}) {
+export default function Car3D({car, parts, xray, focus, onPick, stage}) {
   const controls = useRef(), [url, setUrl] = useState(null)
   const color = car.color || '#35507a'
   useEffect(() => {
@@ -161,7 +161,6 @@ export default function Car3D({car, parts, xray, focus, onPick, stage, pick}) {
     <Suspense fallback={null}><Stage kind={stage}/></Suspense>
     <Shadow/>
     {parts.map(p => <Hot key={p.id} p={p} onPick={onPick}/>)}
-    {pick && <Html position={[pick.pos[0], pick.pos[1] + .38, pick.pos[2]]} center distanceFactor={8} style={{pointerEvents: 'none'}}><div className="tag">{pick.name} · {Math.round(pick.pct * 100)}%</div></Html>}
     <OrbitControls ref={controls} autoRotate={!focus} autoRotateSpeed={.7} enablePan={false} minDistance={2.5} maxDistance={11} maxPolarAngle={Math.PI / 2.05}/>
     <Rig focus={focus} controls={controls}/>
   </Canvas>
