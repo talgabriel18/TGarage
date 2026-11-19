@@ -3,6 +3,7 @@ import {supabase as sb} from '../lib/supabase'
 import {openFile} from '../lib/media'
 import {ro, ron, dt} from '../lib/util'
 import {priceKeys, fuelKey, BRANDS, EVP} from '../data'
+import {Num} from '../components/YearReview'
 import TripCalc from '../components/TripCalc'
 
 const map = q => `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(q)}`
@@ -41,7 +42,7 @@ export default function Consum({D, car, reload, onEdit}) {
     <div className="card"><b>Cost lunar</b>{ms.length === 0 ? <p className="mu">Fără date încă.</p> : <div style={{display: 'flex', alignItems: 'end', gap: 8, height: 110, marginTop: 8}}>
       {ms.map(([k, v]) => <div key={k} style={{flex: 1, textAlign: 'center'}}><div style={{height: Math.max(4, v / mx * 80), background: 'var(--ac)', borderRadius: 8}}/><small>{Math.round(v)}</small><br/><small className="mu">{k.slice(5)}</small></div>)}</div>}</div>
     <div className="card"><b>💰 Cost total de deținere</b>
-      <div className="grid" style={{marginTop: 8}}><div><div className="big">{ron(grand / mo)}</div><small className="mu">pe lună</small></div><div><div className="big">{kmR > 0 ? ron(grand / kmR) : '—'}</div><small className="mu">pe km</small></div></div>
+      <div className="grid" style={{marginTop: 8}}><div><div className="big"><Num v={grand / mo} f={n => ron(n)}/></div><small className="mu">pe lună</small></div><div><div className="big">{kmR > 0 ? ron(grand / kmR) : '—'}</div><small className="mu">pe km</small></div></div>
       <div style={{display: 'flex', height: 10, borderRadius: 6, overflow: 'hidden', marginTop: 10, background: 'var(--gbtn)'}}>{[[sumF, 'var(--ac)'], [sumS, '#f59e0b'], [sumE, '#a78bfa']].map(([v, c], i) => <i key={i} style={{width: `${grand ? v / grand * 100 : 0}%`, background: c}}/>)}</div>
       <div className="row" style={{marginTop: 6, flexWrap: 'wrap'}}><small><b style={{color: 'var(--ac)'}}>●</b> {ev ? 'Încărcare' : 'Combustibil'} {ron(sumF)}</small><small><b style={{color: '#f59e0b'}}>●</b> Service {ron(sumS)}</small><small><b style={{color: '#a78bfa'}}>●</b> Altele {ron(sumE)}</small></div>
       <small className="mu">Total {ron(grand)} de la prima înregistrare</small></div>

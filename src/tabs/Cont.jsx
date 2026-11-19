@@ -68,6 +68,13 @@ export default function Cont({user, onTheme}) {
     const {error} = await sb.auth.updateUser({password: p1}); say('w', error ? error.message : 'Parola a fost schimbată ✓')
     if (!error) { setP1(''); setP2('') }
   }
+  const wipe = async () => {
+    if (!window.confirm('Ștergi TOATE mașinile și istoricul lor? Acțiunea nu se poate anula.')) return
+    const t = window.prompt('Scrie STERGE ca să confirmi:'); if ((t || '').trim().toUpperCase() !== 'STERGE') return say('x', 'Anulat.')
+    const a = await sb.from('vehicles').delete().not('id', 'is', null), b = await sb.from('prices').delete().not('key', 'is', null)
+    try { const {data} = await sb.storage.from('media').list(user.id); if (data && data.length) await sb.storage.from('media').remove(data.map(x => `${user.id}/${x.name}`)) } catch {}
+    say('x', a.error || b.error ? (a.error || b.error).message : 'Datele au fost șterse. Reîncarcă aplicația.')
+  }
   const set = k => ({value: f[k], onChange: e => setF({...f, [k]: e.target.value})})
   return <>
     <div className="card" style={{textAlign: 'center'}}>
@@ -88,6 +95,7 @@ export default function Cont({user, onTheme}) {
       <input type="password" placeholder="Parolă nouă (min. 6 caractere)" value={p1} onChange={e => setP1(e.target.value)}/><input type="password" placeholder="Repetă parola" value={p2} onChange={e => setP2(e.target.value)}/>
       <button className="w" onClick={changePass}>Schimbă parola</button>{msg.w && <p className="mu" style={{margin: '6px 0 0'}}>{msg.w}</p>}</div>
     <Mfa/>
+    <div className="card"><b>🛡️ Confidențialitate</b><p className="mu" style={{margin: '6px 0'}}>Datele tale (mașini, service, alimentări, cheltuieli, poze) sunt stocate în contul tău și vizibile doar ție. Le poți exporta oricând (Acte → Backup JSON sau CSV) sau șterge.</p><button className="g w" onClick={wipe}>🗑️ Șterge toate datele mele</button>{msg.x && <p className="mu" style={{margin: '6px 0 0'}}>{msg.x}</p>}</div>
     <div className="card"><b>⚙️ Aplicație</b><div className="grid" style={{marginTop: 8}}><button className="g" onClick={onTheme}>🎨 Aspect și teme</button><button className="g" onClick={() => sb.auth.signOut()}>Deconectare</button></div></div>
   </>
 }
