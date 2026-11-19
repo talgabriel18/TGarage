@@ -25,6 +25,8 @@ const TABS = [['🚗', 'Garaj 3D'], ['🔧', 'Piese & AI'], ['⛽', 'Consum'], [
 const T = ['vehicles', 'vehicle_parts', 'maintenance_logs', 'fuel_logs', 'documents', 'prices']
 const empty = {cars: [], parts: [], logs: [], fuel: [], docs: [], prices: DEFAULT_PRICES, pdates: {}, raw: {}, exp: [], expOk: true, uid: null}
 
+const AK = 'tgarage.alerts'
+const loadAk = () => { try { return {read: [], del: [], ...JSON.parse(localStorage.getItem(AK) || '{}')} } catch { return {read: [], del: []} } }
 const slide = {in: d => ({opacity: 0, x: d * 70}), mid: {opacity: 1, x: 0}, out: d => ({opacity: 0, x: d * -70})}
 const greet = () => { const h = new Date().getHours(); return h < 5 ? 'Noapte bună' : h < 12 ? 'Bună dimineața' : h < 18 ? 'Bună ziua' : 'Bună seara' }
 
@@ -33,6 +35,8 @@ export default function App() {
   const [carId, setCarId0] = useState(() => { try { return localStorage.getItem('tgarage.car') } catch { return null } }), [tab, setTab] = useState(0), [add, setAdd] = useState(false), [edit, setEdit] = useState(null), [cfg, setCfg] = useState(false), [loaded, setLoaded] = useState(false), [gate, setGate] = useState('check'), [al, setAl] = useState(false), [toast, setToast] = useState(''), [dir, setDir] = useState(1), [burst, setBurst] = useState(0), [tour, setTour] = useState(() => { try { return !localStorage.getItem('tgarage.tour') } catch { return false } }), [err, setErr] = useState('')
   const {th, setTh, img, setImg, t} = useTheme()
   const touch = useRef(null)
+  const [ak, setAk0] = useState(loadAk)
+  const setAk = fn => setAk0(cur => { const n = fn(cur); try { localStorage.setItem(AK, JSON.stringify(n)) } catch {} return n })
   const md = s?.user?.user_metadata || {}, nm = md.name, avatarUrl = useUrl(md.avatar_photo)
   const setCarId = v => setCarId0(cur => { const n = typeof v === 'function' ? v(cur) : v; try { if (n) localStorage.setItem('tgarage.car', n); else localStorage.removeItem('tgarage.car') } catch {} return n })
   useEffect(() => {
@@ -57,7 +61,7 @@ export default function App() {
   useEffect(() => {
     try {
       if (!s || typeof Notification === 'undefined' || Notification.permission !== 'granted') return
-      const a = computeAlerts(D).filter(x => x.sev > 0), k = new Date().toDateString()
+      const a = computeAlerts(D).filter(x => x.sev > 0 && !ak.del.includes(x.id) && !ak.read.includes(x.id)), k = new Date().toDateString()
       if (a.length && localStorage.getItem('garaj3d.notified') !== k) { localStorage.setItem('garaj3d.notified', k); new Notification(APP, {body: `${a.length} lucruri de rezolvat la mașinile tale`}) }
     } catch {}
   }, [D, s])
@@ -80,20 +84,24 @@ export default function App() {
   }
   const flash = m => { setToast(m); setTimeout(() => setToast(''), 2200) }
   const reload = async p => { await load(p); flash('Actualizat ✓') }
-  const alerts = computeAlerts(D)
+  const alerts = computeAlerts(D).filter(a => !ak.del.includes(a.id)), unread = alerts.filter(a => !ak.read.includes(a.id)).length
+  const readA = id => setAk(c => c.read.includes(id) ? c : {...c, read: [...c.read, id]})
+  const delA = id => setAk(c => ({...c, del: [...c.del, id]}))
+  const readAll = () => setAk(c => ({...c, read: [...new Set([...c.read, ...alerts.map(a => a.id)])]}))
+  const delAll = () => setAk(c => ({...c, del: [...new Set([...c.del, ...alerts.map(a => a.id)])]}))
   const props = {D, car, reload, setCar: setCarId, onEdit: setEdit, stage: th.stage || 'studio'}
   const page = tab === 4 ? <Cont user={s.user} onTheme={() => setCfg(true)}/> : tab === 0 || !car ? <Garage {...props}/> : [null, <Parts {...props}/>, <Consum {...props}/>, <Acte {...props}/>][tab]
   const closeAdd = () => { setAdd(false); setEdit(null) }
   return <MotionConfig reducedMotion={th.calm ? 'always' : 'never'}>
     {bg}
     <header className="top"><div style={{display: 'flex', gap: 12, alignItems: 'center'}}><div onClick={() => go(4)} style={{cursor: 'pointer'}}>{avatarUrl ? <img src={avatarUrl} className="logo av" alt=""/> : md.avatar_emoji ? <span className="logo av">{md.avatar_emoji}</span> : <img src="/logo.png" className="logo" alt={APP}/>}</div><div><small className="mu">{greet()}{nm ? `, ${nm}` : ''}{car ? ` · ${car.brand} ${car.model || ''}` : ''}</small><h1>{TABS[tab][1]}</h1></div></div>
-      <div style={{display: 'flex', gap: 8}}><motion.button className="icon" whileTap={{scale: .85}} onClick={() => setAl(true)} aria-label="Notificări">🔔{alerts.length > 0 && <i className="badge">{alerts.length}</i>}</motion.button><motion.button className="icon" whileTap={{scale: .85, rotate: 60}} onClick={() => setCfg(true)} aria-label="Setări">⚙️</motion.button></div></header>
+      <div style={{display: 'flex', gap: 8}}><motion.button className="icon" whileTap={{scale: .85}} onClick={() => setAl(true)} aria-label="Notificări">🔔{unread > 0 && <i className="badge">{unread}</i>}</motion.button><motion.button className="icon" whileTap={{scale: .85, rotate: 60}} onClick={() => setCfg(true)} aria-label="Setări">⚙️</motion.button></div></header>
     <main onTouchStart={swStart} onTouchEnd={swEnd}>{err && <p style={{color: 'var(--ur)'}}>Eroare: {err}. Ai rulat schema.sql în Supabase?</p>}
       {tab === 0 && !nm && <NamePrompt/>}
       <AnimatePresence mode="wait" custom={dir}><motion.div className="page" key={tab} custom={dir} variants={slide} initial="in" animate="mid" exit="out" transition={{type: 'spring', stiffness: 300, damping: 30}}>{page}</motion.div></AnimatePresence></main>
     {car && tab !== 4 && <motion.button className="fab" whileTap={{scale: .92}} initial={{scale: 0}} animate={{scale: 1}} onClick={() => setAdd(true)}>+ Adaugă</motion.button>}
     {(add || edit) && car && <AddSheet key={edit ? edit.row.id : 'new'} D={D} car={car} parts={parts} tab={tab} edit={edit} onClose={closeAdd} onSaved={async k => { closeAdd(); await reload(car.id); if (k === 'service' || k === 'fuel' || k === 'expense') setBurst(Date.now()) }} onKeep={async () => { await reload(car.id); setBurst(Date.now()) }}/>}
-    {al && <Alerts list={alerts} onClose={() => setAl(false)}/>}
+    {al && <Alerts list={alerts} read={ak.read} onRead={readA} onDel={delA} onReadAll={readAll} onDelAll={delAll} onClose={() => setAl(false)}/>}
     {toast && <div className="toast">{toast}</div>}
     {burst > 0 && !th.calm && <Confetti key={burst}/>}
     {tour && <Tour onDone={() => { try { localStorage.setItem('tgarage.tour', '1') } catch {} setTour(false) }}/>}
