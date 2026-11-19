@@ -46,13 +46,13 @@ function Hot({p, onPick}) {
   const r = useRef(), w = useRef()
   useFrame(({clock}) => {
     const t = clock.elapsedTime
-    r.current.scale.setScalar(1 + .35 * Math.sin(t * 3 + p.pos[0] * 2))
-    const k = (t * .8 + p.pos[0]) % 1
-    w.current.scale.setScalar(1 + k * 2.2); w.current.material.opacity = .5 * (1 - k)
+    r.current.scale.setScalar(1 + .3 * Math.sin(t * 3 + p.pos[0] * 2 + p.pos[2]))
+    const k = (t * .8 + p.pos[0] + p.pos[2]) % 1
+    w.current.scale.setScalar(1 + k * 2.2); w.current.material.opacity = .55 * (1 - k)
   })
-  return <group position={p.pos}>
-    <mesh ref={r} onClick={e => { e.stopPropagation(); onPick(p) }}><sphereGeometry args={[.14, 16, 16]}/><meshBasicMaterial color={p.col}/></mesh>
-    <mesh ref={w} raycast={() => null}><sphereGeometry args={[.14, 12, 12]}/><meshBasicMaterial color={p.col} transparent opacity={.5} depthWrite={false}/></mesh>
+  return <group position={p.pos} renderOrder={20}>
+    <mesh ref={r} renderOrder={21} onClick={e => { e.stopPropagation(); onPick(p) }}><sphereGeometry args={[.12, 16, 16]}/><meshBasicMaterial color={p.col} transparent opacity={.95} depthTest={false}/></mesh>
+    <mesh ref={w} renderOrder={20} raycast={() => null}><sphereGeometry args={[.12, 12, 12]}/><meshBasicMaterial color={p.ring || p.col} transparent opacity={.5} depthWrite={false} depthTest={false}/></mesh>
   </group>
 }
 
@@ -61,12 +61,6 @@ const Wrench = ({p, a = 0, l = .8}) => <group position={p} rotation={[0, 0, a]}>
   <Bx p={[0, 0, 0]} s={[l, .07, .025]} c="#b8c0cc" m={.9} ro={.3}/>
   {[-1, 1].map(k => <mesh key={k} position={[k * l / 2, 0, 0]}><torusGeometry args={[.07, .03, 8, 16]}/><meshStandardMaterial color="#b8c0cc" metalness={.9} roughness={.3}/></mesh>)}</group>
 const Hammer = ({p, a = 0}) => <group position={p} rotation={[0, 0, a]}><Bx p={[0, 0, 0]} s={[.07, .7, .03]} c="#8b5a2b"/><Bx p={[0, .32, 0]} s={[.3, .12, .06]} c="#444b57" m={.8} ro={.4}/></group>
-
-function Dust() {
-  const ref = useRef(), pos = useMemo(() => Float32Array.from({length: 180}, (_, i) => i % 3 === 1 ? Math.random() * 4 : (Math.random() - .5) * 8), [])
-  useFrame(() => { const a = ref.current.geometry.attributes.position; for (let i = 0; i < 60; i++) { a.array[i * 3 + 1] += .002; if (a.array[i * 3 + 1] > 4) a.array[i * 3 + 1] = 0 } a.needsUpdate = true })
-  return <points ref={ref}><bufferGeometry><bufferAttribute attach="attributes-position" count={60} array={pos} itemSize={3}/></bufferGeometry><pointsMaterial size={.045} color="#fff6d8" transparent opacity={.5} depthWrite={false}/></points>
-}
 
 function Clock({p}) {
   const h = useRef(), m = useRef()
@@ -81,18 +75,20 @@ const mkTex = (draw, rx, ry) => { const c = document.createElement('canvas'); c.
 
 function GarageScene() {
   const logo = useTexture('/logo.png'), flat = [-Math.PI / 2, 0, 0], hr = new Date().getHours(), sky = hr < 6 || hr >= 20 ? '#0b1530' : hr < 8 || hr >= 18 ? '#f59e6b' : '#8ec5ff'
-  const floorT = useMemo(() => mkTex(g => { g.fillStyle = '#a3abb8'; g.fillRect(0, 0, 512, 512); for (let i = 0; i < 2200; i++) { g.fillStyle = Math.random() < .5 ? 'rgba(255,255,255,.06)' : 'rgba(0,0,0,.06)'; g.fillRect(Math.random() * 512, Math.random() * 512, 2, 2) } g.strokeStyle = 'rgba(50,58,72,.6)'; g.lineWidth = 4; g.strokeRect(2, 2, 508, 508) }, 4, 4), [])
+  const floorT = useMemo(() => mkTex(g => { g.fillStyle = '#a3abb8'; g.fillRect(0, 0, 512, 512); for (let i = 0; i < 2200; i++) { g.fillStyle = Math.random() < .5 ? 'rgba(255,255,255,.06)' : 'rgba(0,0,0,.06)'; g.fillRect(Math.random() * 512, Math.random() * 512, 2, 2) } g.strokeStyle = 'rgba(50,58,72,.6)'; g.lineWidth = 4; g.strokeRect(2, 2, 508, 508) }, 3, 2.5), [])
   const woodT = useMemo(() => mkTex(g => { for (let x = 0; x < 512; x += 32) { g.fillStyle = (x / 32) % 2 ? '#7a5238' : '#6a4630'; g.fillRect(x, 0, 29, 512); g.fillStyle = 'rgba(0,0,0,.5)'; g.fillRect(x + 29, 0, 3, 512); for (let k = 0; k < 26; k++) { g.fillStyle = 'rgba(255,255,255,.05)'; g.fillRect(x + Math.random() * 28, 0, 1, 512) } } }, 3.5, 1), [])
   const wallT = useMemo(() => mkTex(g => { g.fillStyle = '#b4bac6'; g.fillRect(0, 0, 512, 512); for (let i = 0; i < 2600; i++) { g.fillStyle = Math.random() < .5 ? 'rgba(255,255,255,.07)' : 'rgba(0,0,0,.06)'; g.fillRect(Math.random() * 512, Math.random() * 512, 2, 2) } g.strokeStyle = 'rgba(70,78,92,.45)'; g.lineWidth = 3; g.strokeRect(1, 1, 510, 510) }, 5, 1), [])
+  const brickT = useMemo(() => mkTex(g => { g.fillStyle = '#9aa0ab'; g.fillRect(0, 0, 512, 512); for (let r = 0; r < 16; r++) { const o = r % 2 ? 0 : 32; for (let x = -64 + o; x < 512; x += 64) { g.fillStyle = `hsl(215,8%,${72 + Math.random() * 8}%)`; g.fillRect(x + 2, r * 32 + 2, 60, 28) } } }, 3, 1.4), [])
+  const frontT = useMemo(() => mkTex(g => { g.fillStyle = '#c3c8d2'; g.fillRect(0, 0, 512, 512); for (let i = 0; i < 2600; i++) { g.fillStyle = Math.random() < .5 ? 'rgba(255,255,255,.07)' : 'rgba(0,0,0,.05)'; g.fillRect(Math.random() * 512, Math.random() * 512, 2, 2) } g.strokeStyle = 'rgba(70,78,92,.4)'; g.lineWidth = 3; g.strokeRect(1, 1, 510, 510) }, 4, 1), [])
   return <group>
     <hemisphereLight args={['#dfe7ff', '#3a3f4b', .9]}/>
     <pointLight position={[-2.5, 2.6, -3.5]} intensity={.8} distance={7} color="#ffd9a0"/><pointLight position={[2.5, 2.6, -3.5]} intensity={.8} distance={7} color="#ffd9a0"/>
-    <Bx p={[0, 4.35, -4.45]} s={[14, .05, .05]} c="#ffd9a0" e="#ffd9a0"/>
-    <mesh rotation={flat}><planeGeometry args={[14, 14]}/><meshStandardMaterial map={floorT} roughness={.35} metalness={.15}/></mesh>
+    <Bx p={[0, 4.35, -4.45]} s={[11, .05, .05]} c="#ffd9a0" e="#ffd9a0"/>
+    <mesh rotation={flat}><planeGeometry args={[11, 9]}/><meshStandardMaterial map={floorT} roughness={.35} metalness={.15}/></mesh>
     <Bx p={[0, .01, 1.9]} s={[5.4, .01, .08]} c="#facc15"/><Bx p={[0, .01, -1.9]} s={[5.4, .01, .08]} c="#facc15"/><Bx p={[2.7, .01, 0]} s={[.08, .01, 3.8]} c="#facc15"/><Bx p={[-2.7, .01, 0]} s={[.08, .01, 3.8]} c="#facc15"/>
-    <mesh position={[0, 2.2, -4.5]}><planeGeometry args={[14, 5]}/><meshStandardMaterial map={woodT} roughness={.7}/></mesh>
-    <mesh position={[-5.5, 2.2, 0]} rotation={[0, Math.PI / 2, 0]}><planeGeometry args={[14, 5]}/><meshStandardMaterial map={wallT} roughness={.9}/></mesh>
-    <Bx p={[0, .5, -4.47]} s={[14, 1, .04]} c="#343a47"/><Bx p={[0, 1.02, -4.46]} s={[14, .06, .05]} c="#ff8a3d"/>
+    <mesh position={[0, 2.35, -4.5]}><planeGeometry args={[11, 4.7]}/><meshStandardMaterial map={woodT} roughness={.7}/></mesh>
+    <mesh position={[-5.5, 2.35, 0]} rotation={[0, Math.PI / 2, 0]}><planeGeometry args={[9, 4.7]}/><meshStandardMaterial map={wallT} roughness={.9}/></mesh>
+    <Bx p={[0, .5, -4.47]} s={[11, 1, .04]} c="#343a47"/><Bx p={[0, 1.02, -4.46]} s={[11, .06, .05]} c="#ff8a3d"/>
     <Bx p={[-.6, 2.3, -4.46]} s={[4.4, 2, .04]} c="#2b303c" ro={.7}/>
     {[[-2.3, .1], [-1.7, -.1], [-1.1, .15], [-.5, -.15], [.1, .1], [.7, -.1]].map(([x, a], i) => <Wrench key={i} p={[x, 2.85, -4.42]} a={Math.PI / 2 + a} l={.75 + (i % 3) * .1}/>)}
     {[-2.2, -1.4, -.6, .2, 1].map((x, i) => <Hammer key={i} p={[x, 1.85, -4.42]} a={i % 2 ? .08 : -.08}/>)}
@@ -109,11 +105,23 @@ function GarageScene() {
       {[.25, .75].map(y => <mesh key={y} position={[x, y, z]} rotation={flat}><torusGeometry args={[.325, .015, 6, 20]}/><meshStandardMaterial color="#222222"/></mesh>)}</group>)}
     {Array.from({length: 14}, (_, i) => <Bx key={i} p={[-5.46, .2 + i * .33, 1]} s={[.05, .3, 4.6]} c={i % 2 ? '#9aa0ab' : '#8d939e'} m={.6} ro={.5}/>)}
     {[-2.5, 0, 2.5].map(x => <group key={x}><Bx p={[x, 4.4, -2]} s={[1.6, .06, .3]} c="#fff6d8" e="#fff6d8"/><pointLight position={[x, 4, -2]} intensity={.55} distance={9} color="#fff1cf"/></group>)}
-    <Dust/><Clock p={[.9, 3.5, -4.42]}/>
+    <Clock p={[.9, 3.5, -4.42]}/>
     <Bx p={[-4.3, 3, -4.46]} s={[1.6, 1.3, .06]} c="#111827"/>
     <mesh position={[-4.3, 3, -4.42]}><planeGeometry args={[1.4, 1.1]}/><meshBasicMaterial color={sky}/></mesh>
     <pointLight position={[-4.3, 3, -3.6]} color={sky} intensity={.35} distance={7}/>
-    <mesh rotation={flat} position={[1.8, .011, 2.4]}><circleGeometry args={[.5, 24]}/><meshBasicMaterial color="#000000" transparent opacity={.25}/></mesh>
+    <mesh position={[5.5, 2.35, 0]} rotation={[0, -Math.PI / 2, 0]}><planeGeometry args={[9, 4.7]}/><meshStandardMaterial map={brickT} roughness={.85}/></mesh>
+    <mesh position={[0, 2.35, 4.5]} rotation={[0, Math.PI, 0]}><planeGeometry args={[11, 4.7]}/><meshStandardMaterial map={frontT} roughness={.9}/></mesh>
+    <mesh position={[0, 4.7, 0]} rotation={[Math.PI / 2, 0, 0]}><planeGeometry args={[11, 9]}/><meshStandardMaterial color="#cfd3db" roughness={.9}/></mesh>
+    {[-2.5, 2.5].map(z => <Bx key={z} p={[0, 4.6, z]} s={[11, .14, .22]} c="#8b919d"/>)}
+    <Bx p={[0, .5, 4.47]} s={[11, 1, .04]} c="#343a47"/><Bx p={[0, 1.02, 4.46]} s={[11, .06, .05]} c="#ff8a3d"/><Bx p={[5.47, .5, 0]} s={[.04, 1, 9]} c="#343a47"/><Bx p={[5.46, 1.02, 0]} s={[.05, .06, 9]} c="#ff8a3d"/>
+    {[-.7, 1.7].map(z => <Bx key={z} p={[5.2, 1.1, z]} s={[.06, 2.2, .06]} c="#2b303c"/>)}
+    {[.5, 1.2, 1.9].map(y => <Bx key={y} p={[5.2, y, .5]} s={[.5, .05, 2.5]} c="#4b5563" m={.6}/>)}
+    {[[.5, -.2], [.5, .6], [.5, 1.3], [1.2, -.3], [1.2, .9], [1.9, 0], [1.9, 1.1]].map(([y, z], i) => <Bx key={i} p={[5.2, y + .2, z]} s={[.38, .32, .42]} c={i % 3 === 0 ? '#c8102e' : '#b08a5a'} ro={.8}/>)}
+    <Bx p={[2.6, 2.9, 4.46]} s={[1.6, 1.3, .06]} c="#111827"/>
+    <mesh position={[2.6, 2.9, 4.42]} rotation={[0, Math.PI, 0]}><planeGeometry args={[1.4, 1.1]}/><meshBasicMaterial color={sky}/></mesh>
+    <pointLight position={[2.6, 2.9, 3.6]} color={sky} intensity={.3} distance={7}/>
+    <mesh position={[-3.6, .75, 4.3]}><cylinderGeometry args={[.1, .1, .5, 16]}/><meshStandardMaterial color="#c8102e" roughness={.4}/></mesh><Bx p={[-3.6, 1.05, 4.3]} s={[.12, .1, .12]} c="#111111"/>
+    <pointLight position={[4.3, 2.5, 0]} intensity={.7} distance={7} color="#ffe2b8"/><pointLight position={[0, 2.5, 3.4]} intensity={.7} distance={7} color="#ffe2b8"/>
     {[[3.4, 1.2], [3.9, 1.5]].map(([x, z], i) => <mesh key={i} position={[x, .3, z]}><coneGeometry args={[.18, .6, 4]}/><meshStandardMaterial color="#c8102e" roughness={.5}/></mesh>)}
   </group>
 }
@@ -141,12 +149,13 @@ function Shadow() {
   return <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, .014, 0]}><planeGeometry args={[4.6, 2.6]}/><meshBasicMaterial map={tex} transparent depthWrite={false}/></mesh>
 }
 
-function Rig({focus, controls}) {
+function Rig({focus, controls, stage}) {
   const {camera} = useThree(), frames = useRef(0)
-  useEffect(() => { frames.current = 100 }, [focus])
+  const g = stage === 'garaj'
+  useEffect(() => { frames.current = 100; camera.fov = g ? 58 : 45; camera.updateProjectionMatrix() }, [focus, g])
   useFrame(() => {
     if (frames.current-- <= 0 || !controls.current) return
-    const t = new THREE.Vector3(...(focus || [0, .7, 0])), d = focus ? 3 : 7
+    const t = new THREE.Vector3(...(focus || [0, .7, 0])), d = focus ? 2.6 : g ? 4 : 7
     controls.current.target.lerp(t, .08)
     camera.position.lerp(new THREE.Vector3(t.x + d * .55, t.y + d * .4 + .3, t.z + d * .75), .06)
     controls.current.update()
@@ -163,13 +172,13 @@ export default function Car3D({car, parts, xray, focus, onPick, stage}) {
     return () => { ok = false }
   }, [car.id, car.body, car.model_url])
   const proc = <Procedural body={car.body} color={color} xray={xray}/>
-  return <Canvas camera={{position: [4, 3, 5.5], fov: 45}} dpr={[1, 2]}>
+  return <Canvas camera={{position: stage === 'garaj' ? [2.2, 1.9, 3] : [4, 3, 5.5], fov: stage === 'garaj' ? 58 : 45}} dpr={[1, 2]}>
     <ambientLight intensity={.8}/><directionalLight position={[3, 5, 4]} intensity={1.1}/>
     <Suspense fallback={null}>{url ? <Boundary key={url} fallback={proc}><Glb url={url} body={car.body} color={color} xray={xray}/></Boundary> : proc}</Suspense>
     <Suspense fallback={null}><Stage kind={stage}/></Suspense>
-    <Shadow/>
-    {parts.map(p => <Hot key={p.id} p={p} onPick={onPick}/>)}
-    <OrbitControls ref={controls} autoRotate={!focus} autoRotateSpeed={.7} enablePan={false} minDistance={2.5} maxDistance={11} maxPolarAngle={Math.PI / 2.05}/>
-    <Rig focus={focus} controls={controls}/>
+    {stage !== 'garaj' && <Shadow/>}
+    {parts.map(p => <Hot key={p.sid || p.id} p={p} onPick={onPick}/>)}
+    <OrbitControls ref={controls} autoRotate={!focus} autoRotateSpeed={.7} enablePan={false} minDistance={2.5} maxDistance={stage === 'garaj' ? 4.4 : 11} maxPolarAngle={Math.PI / 2.05}/>
+    <Rig focus={focus} controls={controls} stage={stage}/>
   </Canvas>
 }
