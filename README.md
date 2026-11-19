@@ -42,5 +42,8 @@ Logo-ul e in `public/logo.png` si `public/icon-*.png` (inlocuieste-le cu un PNG 
 ## Cont
 Tab-ul Cont: profil (nume, poza/emoji), email, parola, 2FA (TOTP), tema. 2FA se ceruta la autentificare in aplicatie. Parola uitata: link pe email.
 
+## Redenumire
+Numele e in `src/brand.js`. Schimba-l acolo, apoi `<title>` si `apple-mobile-web-app-title` din `index.html` si `name` din `public/manifest.webmanifest`.
+
 ## Preturi
 Se editeaza manual in tab-ul Consum (cu data ultimei modificari). Butoanele "cea mai apropiata benzinarie" deschid Google Maps.
