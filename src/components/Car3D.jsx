@@ -1,5 +1,5 @@
 import {Canvas, useFrame, useThree} from '@react-three/fiber'
-import {OrbitControls, useGLTF, useTexture} from '@react-three/drei'
+import {OrbitControls, useGLTF, useTexture, Html} from '@react-three/drei'
 import * as THREE from 'three'
 import React, {Suspense, useEffect, useMemo, useRef, useState} from 'react'
 import {BODY, ROT} from '../data'
@@ -62,8 +62,23 @@ const Wrench = ({p, a = 0, l = .8}) => <group position={p} rotation={[0, 0, a]}>
   {[-1, 1].map(k => <mesh key={k} position={[k * l / 2, 0, 0]}><torusGeometry args={[.07, .03, 8, 16]}/><meshStandardMaterial color="#b8c0cc" metalness={.9} roughness={.3}/></mesh>)}</group>
 const Hammer = ({p, a = 0}) => <group position={p} rotation={[0, 0, a]}><Bx p={[0, 0, 0]} s={[.07, .7, .03]} c="#8b5a2b"/><Bx p={[0, .32, 0]} s={[.3, .12, .06]} c="#444b57" m={.8} ro={.4}/></group>
 
+function Dust() {
+  const ref = useRef(), pos = useMemo(() => Float32Array.from({length: 180}, (_, i) => i % 3 === 1 ? Math.random() * 4 : (Math.random() - .5) * 8), [])
+  useFrame(() => { const a = ref.current.geometry.attributes.position; for (let i = 0; i < 60; i++) { a.array[i * 3 + 1] += .002; if (a.array[i * 3 + 1] > 4) a.array[i * 3 + 1] = 0 } a.needsUpdate = true })
+  return <points ref={ref}><bufferGeometry><bufferAttribute attach="attributes-position" count={60} array={pos} itemSize={3}/></bufferGeometry><pointsMaterial size={.045} color="#fff6d8" transparent opacity={.5} depthWrite={false}/></points>
+}
+
+function Clock({p}) {
+  const h = useRef(), m = useRef()
+  useFrame(() => { const d = new Date(); m.current.rotation.z = -(d.getMinutes() + d.getSeconds() / 60) / 60 * Math.PI * 2; h.current.rotation.z = -((d.getHours() % 12) + d.getMinutes() / 60) / 12 * Math.PI * 2 })
+  return <group position={p}>
+    <mesh rotation={[Math.PI / 2, 0, 0]}><cylinderGeometry args={[.34, .34, .05, 32]}/><meshStandardMaterial color="#e5e7eb"/></mesh>
+    <group position={[0, 0, .04]}><group ref={h}><mesh position={[0, .08, 0]}><boxGeometry args={[.03, .17, .01]}/><meshBasicMaterial color="#111111"/></mesh></group><group ref={m}><mesh position={[0, .12, .01]}><boxGeometry args={[.02, .25, .01]}/><meshBasicMaterial color="#111111"/></mesh></group></group>
+  </group>
+}
+
 function GarageScene() {
-  const logo = useTexture('/logo.png'), flat = [-Math.PI / 2, 0, 0]
+  const logo = useTexture('/logo.png'), flat = [-Math.PI / 2, 0, 0], hr = new Date().getHours(), sky = hr < 6 || hr >= 20 ? '#0b1530' : hr < 8 || hr >= 18 ? '#f59e6b' : '#8ec5ff'
   return <group>
     <mesh rotation={flat}><planeGeometry args={[14, 14]}/><meshStandardMaterial color="#2a2d34" roughness={.5} metalness={.25}/></mesh>
     <Bx p={[0, .01, 1.9]} s={[5.4, .01, .08]} c="#facc15"/><Bx p={[0, .01, -1.9]} s={[5.4, .01, .08]} c="#facc15"/><Bx p={[2.7, .01, 0]} s={[.08, .01, 3.8]} c="#facc15"/><Bx p={[-2.7, .01, 0]} s={[.08, .01, 3.8]} c="#facc15"/>
@@ -86,6 +101,12 @@ function GarageScene() {
       {[.25, .75].map(y => <mesh key={y} position={[x, y, z]} rotation={flat}><torusGeometry args={[.325, .015, 6, 20]}/><meshStandardMaterial color="#222222"/></mesh>)}</group>)}
     {Array.from({length: 14}, (_, i) => <Bx key={i} p={[-5.46, .2 + i * .33, 1]} s={[.05, .3, 4.6]} c={i % 2 ? '#9aa0ab' : '#8d939e'} m={.6} ro={.5}/>)}
     {[-2.5, 0, 2.5].map(x => <group key={x}><Bx p={[x, 4.4, -2]} s={[1.6, .06, .3]} c="#fff6d8" e="#fff6d8"/><pointLight position={[x, 4, -2]} intensity={.55} distance={9} color="#fff1cf"/></group>)}
+    <Dust/><Clock p={[.9, 3.5, -4.42]}/>
+    <Bx p={[-4.3, 3, -4.46]} s={[1.6, 1.3, .06]} c="#111827"/>
+    <mesh position={[-4.3, 3, -4.42]}><planeGeometry args={[1.4, 1.1]}/><meshBasicMaterial color={sky}/></mesh>
+    <pointLight position={[-4.3, 3, -3.6]} color={sky} intensity={.35} distance={7}/>
+    <mesh rotation={flat} position={[1.8, .011, 2.4]}><circleGeometry args={[.5, 24]}/><meshBasicMaterial color="#000000" transparent opacity={.25}/></mesh>
+    {[[3.4, 1.2], [3.9, 1.5]].map(([x, z], i) => <mesh key={i} position={[x, .3, z]}><coneGeometry args={[.18, .6, 4]}/><meshStandardMaterial color="#c8102e" roughness={.5}/></mesh>)}
   </group>
 }
 
@@ -102,6 +123,16 @@ function Stage({kind}) {
   </group>
 }
 
+function Shadow() {
+  const tex = useMemo(() => {
+    const c = document.createElement('canvas'); c.width = c.height = 128
+    const x = c.getContext('2d'), g = x.createRadialGradient(64, 64, 4, 64, 64, 62)
+    g.addColorStop(0, 'rgba(0,0,0,.65)'); g.addColorStop(1, 'rgba(0,0,0,0)'); x.fillStyle = g; x.fillRect(0, 0, 128, 128)
+    return new THREE.CanvasTexture(c)
+  }, [])
+  return <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, .014, 0]}><planeGeometry args={[4.6, 2.6]}/><meshBasicMaterial map={tex} transparent depthWrite={false}/></mesh>
+}
+
 function Rig({focus, controls}) {
   const {camera} = useThree(), frames = useRef(0)
   useEffect(() => { frames.current = 100 }, [focus])
@@ -115,7 +146,7 @@ function Rig({focus, controls}) {
   return null
 }
 
-export default function Car3D({car, parts, xray, focus, onPick, stage}) {
+export default function Car3D({car, parts, xray, focus, onPick, stage, pick}) {
   const controls = useRef(), [url, setUrl] = useState(null)
   const color = car.color || '#35507a'
   useEffect(() => {
@@ -128,7 +159,9 @@ export default function Car3D({car, parts, xray, focus, onPick, stage}) {
     <ambientLight intensity={.8}/><directionalLight position={[3, 5, 4]} intensity={1.1}/>
     <Suspense fallback={null}>{url ? <Boundary key={url} fallback={proc}><Glb url={url} body={car.body} color={color} xray={xray}/></Boundary> : proc}</Suspense>
     <Suspense fallback={null}><Stage kind={stage}/></Suspense>
+    <Shadow/>
     {parts.map(p => <Hot key={p.id} p={p} onPick={onPick}/>)}
+    {pick && <Html position={[pick.pos[0], pick.pos[1] + .38, pick.pos[2]]} center distanceFactor={8} style={{pointerEvents: 'none'}}><div className="tag">{pick.name} · {Math.round(pick.pct * 100)}%</div></Html>}
     <OrbitControls ref={controls} autoRotate={!focus} autoRotateSpeed={.7} enablePan={false} minDistance={2.5} maxDistance={11} maxPolarAngle={Math.PI / 2.05}/>
     <Rig focus={focus} controls={controls}/>
   </Canvas>

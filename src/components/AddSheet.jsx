@@ -6,7 +6,7 @@ import {CATS, DEFAULT_PRICES, EXP_CATS, fuelKey} from '../data'
 import {today, durata} from '../lib/util'
 import {search, estimate} from '../catalog'
 
-export default function AddSheet({D, car, parts, tab, edit, onClose, onSaved}) {
+export default function AddSheet({D, car, parts, tab, edit, onClose, onSaved, onKeep}) {
   const ev = car.powertrain === 'Electric', phev = car.powertrain === 'PHEV', row = edit?.row
   const [kind, setKind] = useState(edit?.kind || (tab === 2 ? 'fuel' : tab === 3 ? 'doc' : 'service'))
   const init = () => {
@@ -28,7 +28,7 @@ export default function AddSheet({D, car, parts, tab, edit, onClose, onSaved}) {
   const unit = ev ? 'kWh' : phev ? f.unit : 'L'
   const defPrice = unit === 'kWh' ? D.prices.kWh : (D.prices[fuelKey(car.powertrain)] ?? DEFAULT_PRICES.Benzină)
   const ok = x => { if (x.error) throw x.error }
-  const save = async () => {
+  const save = async again => {
     setBusy(true); setErr('')
     try {
       const odo = +f.odo || car.odometer, receipt = file ? await upload(file) : null
@@ -65,7 +65,10 @@ export default function AddSheet({D, car, parts, tab, edit, onClose, onSaved}) {
       }
       if (kind === 'part') ok(await sb.from('vehicle_parts').update({name: f.pname, category: f.cat, life_km: +f.lk || 1, life_months: total || null, last_odo: +f.lo || 0, last_date: f.ld || today()}).eq('id', row.id))
       if ((kind === 'service' || kind === 'fuel') && odo > car.odometer) await sb.from('vehicles').update({odometer: odo}).eq('id', car.id)
-      await onSaved()
+      if (again === true && kind === 'service' && !edit) {
+        const i = parts.findIndex(p => p.id === f.part), nx = parts.length ? parts[(i + 1) % parts.length].id : 'new'
+        setF(x => ({...x, part: nx, pc: '', lc: '', oem: '', notes: '', name: '', touched: false})); setFile(null); setBusy(false); await onKeep()
+      } else await onSaved(kind)
     } catch (e) { setErr(e.message); setBusy(false) }
   }
   const delPart = async () => { if (confirm('Ștergi piesa din listă?')) { await sb.from('vehicle_parts').delete().eq('id', row.id); await onSaved() } }
@@ -101,6 +104,7 @@ export default function AddSheet({D, car, parts, tab, edit, onClose, onSaved}) {
       {(kind === 'service' || kind === 'fuel') && <><small className="mu">{edit ? 'Poză bon nouă (înlocuiește cea veche)' : 'Poză bon / factură (opțional)'}</small><input type="file" accept="image/*" onChange={e => setFile(e.target.files[0])}/></>}
       {err && <p style={{color: 'var(--ur)'}}>{err}</p>}
       <motion.button whileTap={{scale: .96}} className="w" style={{marginTop: 8}} disabled={busy} onClick={save}>{busy ? 'Se salvează…' : 'Salvează'}</motion.button>
+      {kind === 'service' && !edit && <button className="g w" style={{marginTop: 8}} disabled={busy} onClick={() => save(true)}>Salvează și adaugă încă o piesă</button>}
       {kind === 'part' && <button className="g w" style={{marginTop: 8}} onClick={delPart}>Șterge piesa</button>}
     </motion.div></>
 }

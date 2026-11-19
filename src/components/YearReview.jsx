@@ -1,6 +1,7 @@
 import {useEffect, useState} from 'react'
 import {motion} from 'framer-motion'
 import {ro, ron, dt} from '../lib/util'
+import {APP} from '../brand'
 
 export function Num({v, f = ro}) {
   const [x, setX] = useState(0)
@@ -35,8 +36,8 @@ export default function YearReview({D, car, onClose}) {
     {k: 'st', i: '📍', t: 'Stația preferată', v: fav ? fav[0] : '', s: fav ? `${fav[1]} vizite` : '', ok: !!fav},
   ].filter(c => c.ok)
   const share = async () => {
-    const text = `TGarage ${y} · ${car.brand} ${car.model || ''}: ${km ? ro(km) + ' km, ' : ''}${ron(tot)} cheltuieli${big ? ', cel mai scump service ' + ron(cost(big)) : ''}.`
-    try { if (navigator.share) await navigator.share({title: 'TGarage', text}); else { await navigator.clipboard.writeText(text); alert('Copiat în clipboard') } } catch {}
+    const text = `${APP} ${y} · ${car.brand} ${car.model || ''}: ${km ? ro(km) + ' km, ' : ''}${ron(tot)} cheltuieli${big ? ', cel mai scump service ' + ron(cost(big)) : ''}.`
+    try { if (navigator.share) await navigator.share({title: APP, text}); else { await navigator.clipboard.writeText(text); alert('Copiat în clipboard') } } catch {}
   }
   return <>
     <div className="bk" onClick={onClose}/>
