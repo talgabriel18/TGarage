@@ -4,7 +4,7 @@ import {supabase as sb} from '../lib/supabase'
 import {upload} from '../lib/media'
 import {CATS, DEFAULT_PRICES, EXP_CATS, fuelKey} from '../data'
 import {today, durata} from '../lib/util'
-import {search, estimate} from '../catalog'
+import {search, estimate, hotFor} from '../catalog'
 
 export default function AddSheet({D, car, parts, tab, edit, onClose, onSaved, onKeep, preset}) {
   const ev = car.powertrain === 'Electric', phev = car.powertrain === 'PHEV', row = edit?.row
@@ -15,13 +15,13 @@ export default function AddSheet({D, car, parts, tab, edit, onClose, onSaved, on
     if (edit.kind === 'fuel') return {date: row.date, odo: row.odometer, q: row.quantity, pu: row.price_per_unit, station: row.station || '', full: row.full_tank, unit: row.unit}
     if (edit.kind === 'expense') return {date: row.date, ecat: row.category, amt: row.amount, enote: row.note || ''}
     if (edit.kind === 'doc') return {type: row.type, pol: row.policy_number || '', exp: row.expires_on}
-    return {pname: row.name, cat: row.category || CATS[0], lk: row.life_km, ly: Math.floor((row.life_months || 0) / 12), lm: (row.life_months || 0) % 12, lo: row.last_odo, ld: row.last_date}
+    return {pname: row.name, cat: row.category || CATS[0], lk: row.life_km, ly: Math.floor((row.life_months || 0) / 12), lm: (row.life_months || 0) % 12, lo: row.last_odo, ld: row.last_date, ok: row.official_km ?? '', oy: row.official_months ? Math.floor(row.official_months / 12) : '', om: row.official_months ? row.official_months % 12 : '', os: row.official_src || ''}
   }
   const [f, setF] = useState(init), [file, setFile] = useState(null), [busy, setBusy] = useState(false), [err, setErr] = useState('')
   const set = (k, v) => setF({...f, [k]: v}), I = k => ({value: f[k] ?? '', onChange: e => set(k, e.target.value)})
   const TT = k => ({value: f[k] ?? '', onChange: e => setF({...f, [k]: e.target.value, touched: true})})
   const total = (+f.ly || 0) * 12 + (+f.lm || 0)
-  const est = () => { const r = estimate(f.name || f.pname || '', f.cat); setF(x => ({...x, lk: r.km, ly: Math.floor(r.mo / 12), lm: r.mo % 12, note: r.note, touched: false})) }
+  const est = () => { const r = estimate(f.name || f.pname || '', f.cat); setF(x => ({...x, lk: r.km, ly: Math.floor(r.mo / 12), lm: r.mo % 12, hot: r.hot, note: r.note, touched: false})) }
   const life = <><small className="mu">Durată de viață: km · ani · luni (poți completa ambele, anii și lunile se adună)</small>
     <div className="grid" style={{gridTemplateColumns: '1.4fr 1fr 1fr'}}><input type="number" placeholder="km" {...TT('lk')}/><input type="number" placeholder="ani" {...TT('ly')}/><input type="number" placeholder="luni" {...TT('lm')}/></div>
     <small className="mu">{total ? `= ${durata(total)}. ` : ''}{f.note || ''}</small><br/><button className="g sm" style={{marginTop: 6}} onClick={est}>✨ Estimează automat</button></>
@@ -42,7 +42,7 @@ export default function AddSheet({D, car, parts, tab, edit, onClose, onSaved, on
           let part = parts.find(p => p.id === f.part)
           if (f.part === 'new') {
             if (!f.name) throw new Error('Scrie numele piesei')
-            const r = await sb.from('vehicle_parts').insert({vehicle_id: car.id, name: f.name, category: f.cat, hot: f.hot || 'caroserie', life_km: +f.lk || 20000, life_months: total || 24, last_odo: odo, last_date: f.date}).select().single(); ok(r); part = r.data
+            const r = await sb.from('vehicle_parts').insert({vehicle_id: car.id, name: f.name, category: f.cat, hot: f.hot || hotFor(f.name, f.cat), life_km: +f.lk || 20000, life_months: total || 24, last_odo: odo, last_date: f.date}).select().single(); ok(r); part = r.data
           } else ok(await sb.from('vehicle_parts').update({last_odo: odo, last_date: f.date}).eq('id', part.id))
           ok(await sb.from('maintenance_logs').insert({vehicle_id: car.id, part_name: part.name, category: part.category, brand_oem: f.oem, date: f.date, odometer: odo, part_cost: +f.pc || 0, labor_cost: +f.lc || 0, notes: f.notes, receipt_url: receipt}))
         }
@@ -63,7 +63,7 @@ export default function AddSheet({D, car, parts, tab, edit, onClose, onSaved, on
         const r = {date: f.date, category: f.ecat, amount: +f.amt, note: f.enote}
         ok(edit ? await sb.from('expenses').update(r).eq('id', row.id) : await sb.from('expenses').insert({...r, vehicle_id: car.id}))
       }
-      if (kind === 'part') ok(await sb.from('vehicle_parts').update({name: f.pname, category: f.cat, life_km: +f.lk || 1, life_months: total || null, last_odo: +f.lo || 0, last_date: f.ld || today()}).eq('id', row.id))
+      if (kind === 'part') ok(await sb.from('vehicle_parts').update({name: f.pname, category: f.cat, life_km: +f.lk || 1, life_months: total || null, hot: hotFor(f.pname, f.cat), last_odo: +f.lo || 0, last_date: f.ld || today(), ...(f.ok || f.oy || f.om || f.os || row.official_km || row.official_months || row.official_src ? {official_km: +f.ok || null, official_months: ((+f.oy || 0) * 12 + (+f.om || 0)) || null, official_src: f.os || null} : {})}).eq('id', row.id))
       if ((kind === 'service' || kind === 'fuel') && odo > car.odometer) await sb.from('vehicles').update({odometer: odo}).eq('id', car.id)
       if (again === true && kind === 'service' && !edit) {
         const i = parts.findIndex(p => p.id === f.part), nx = parts.length ? parts[(i + 1) % parts.length].id : 'new'
@@ -100,7 +100,13 @@ export default function AddSheet({D, car, parts, tab, edit, onClose, onSaved, on
       {kind === 'part' && <>
         <input placeholder="Nume piesă" {...I('pname')}/><select {...I('cat')}>{CATS.map(c => <option key={c}>{c}</option>)}</select>
         {life}
-        <small className="mu">Ultima înlocuire</small><div className="grid"><input type="date" {...I('ld')}/><input type="number" placeholder="La km" {...I('lo')}/></div></>}
+        <small className="mu">Ultima înlocuire</small><div className="grid"><input type="date" {...I('ld')}/><input type="number" placeholder="La km" {...I('lo')}/></div>
+        <div className="plan" style={{marginTop: 10}}><b>🏭 Valoare oficială (producător)</b>
+          <p className="mu" style={{margin: '4px 0', fontSize: 13}}>Dacă o găsești în cartea de service sau pe site-ul producătorului, completeaz-o. Aplicația o va folosi în loc de estimare.</p>
+          <div className="grid" style={{gridTemplateColumns: '1.4fr 1fr 1fr'}}><input type="number" placeholder="km" {...I('ok')}/><input type="number" placeholder="ani" {...I('oy')}/><input type="number" placeholder="luni" {...I('om')}/></div>
+          <input placeholder="Sursă (ex. manualul mașinii, link)" {...I('os')}/>
+          <a className="btn g sm" target="_blank" rel="noreferrer" href={`https://www.google.com/search?q=${encodeURIComponent(`${car.brand} ${car.model || ''} ${car.year || ''} ${f.pname || ''} interval înlocuire producător`)}`}>🔎 Caută pe internet</a>
+          <small className="mu" style={{display: 'block', marginTop: 6}}>Căutarea se deschide în browser. Aplicația nu trimite nimic singură.</small></div></>}
       {(kind === 'service' || kind === 'fuel') && <><small className="mu">{edit ? 'Poză bon nouă (înlocuiește cea veche)' : 'Poză bon / factură (opțional)'}</small><input type="file" accept="image/*" onChange={e => setFile(e.target.files[0])}/></>}
       {err && <p style={{color: 'var(--ur)'}}>{err}</p>}
       <motion.button whileTap={{scale: .96}} className="w" style={{marginTop: 8}} disabled={busy} onClick={save}>{busy ? 'Se salvează…' : 'Salvează'}</motion.button>
