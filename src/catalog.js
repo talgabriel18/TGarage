@@ -85,11 +85,41 @@ export const CATALOG = RAW.split('\n').map(l => { const [name, c, km, mo, hot, t
 const LET = {'Benzină': 'AXB', Diesel: 'AXD', GPL: 'AXBG', Hibrid: 'AXBH', PHEV: 'AXBHP', Electric: 'AEH'}
 export const forType = t => CATALOG.filter(c => [...c.tags].some(x => (LET[t] || LET['Benzină']).includes(x)))
 const CD = {M: [120000, 72], L: [30000, 24], F: [50000, 48], S: [100000, 84], B: [80000, 60], A: [50000, 60], T: [120000, 96], K: [60000, 48], I: [40000, 36], X: [150000, 96], C: [100000, 72]}
+const AXW = new Set(['fata', 'spate', 'dreapta', 'stanga', 'set', 'pentru', 'nou', 'noua', 'noi'])
+const stem = w => w.slice(0, 5)
+const toks = t => norm(t).split(/[^a-z0-9]+/).filter(x => x.length > 2)
+const HOTR = [
+  [/ambreiaj|cardan|planetar|homocinetic|\bcutie|\batf\b|diferential|transmisie|reductor|volant/, 'transmisie'],
+  [/catalizator|dpf|gpf|particule|\btoba|\begr\b|lambda|adblue|evacuare/, 'evacuare'],
+  [/ulei motor/, 'ulei'],
+  [/lichid.*(racire|antigel)|antigel|pompa de apa|termostat|radiator/, 'racire'],
+  [/lichid.*frana|frana|placut|\bdisc|etrier|\babs\b/, 'frana'],
+  [/clima|freon|compresor|uscator/, 'clima'],
+  [/habitaclu|polen|carbon/, 'habitaclu'],
+  [/filtru|filtre/, 'filtre'],
+  [/distributie|curea|\blant\b/, 'distributie'],
+  [/amortizo|\barc(uri)?\b|bielet|bucs|silentbloc|\bbrat|triunghi|stabilizat/, 'amortizor'],
+  [/pivot|cap(ete)? de bara|bare? de directie|caseta|servo|directie/, 'directie'],
+  [/anvelop|\bjant|rulment|geometrie|echilibr|tpms|\broata|\broti/, 'anvelope'],
+  [/tractiune|\bhv\b/, 'bateriaHV'],
+  [/baterie|acumulator|alternator|electromotor|demaror/, 'baterie12'],
+  [/\bfar(uri)?\b|stergato|\bbec/, 'lumini'],
+  [/\bgpl\b/, 'gpl'],
+  [/ulei|bujii|bujie|bobin|injecto|turbo|intercooler|suport/, 'ulei'],
+]
+const CATHOT = {'Motor & Propulsie': 'ulei', 'Filtre & Lichide': 'filtre', 'Sistem Frânare': 'frana', 'Suspensie & Direcție': 'amortizor', 'Baterie & Electrică': 'baterie12', 'Anvelope & Roți': 'anvelope', 'Transmisie & Ambreiaj': 'transmisie', 'Climatizare & Confort': 'clima', 'Iluminat & Vizibilitate': 'lumini', 'Evacuare & Emisii': 'evacuare', Caroserie: 'caroserie'}
+// Zona 3D dupa numele piesei (apoi dupa categorie)
+export const hotFor = (name, category) => { const n = norm(name); for (const [r, h] of HOTR) if (r.test(n)) return h; return CATHOT[category] || 'caroserie' }
+
 export function estimate(name, category) {
-  const w = norm(name).split(/\s+/).filter(x => x.length > 2); let best = null, bs = 0
-  CATALOG.forEach(c => { const n = norm(c.name), s = w.filter(x => n.includes(x)).length; if (s > bs) { bs = s; best = c } })
-  if (best && bs >= Math.max(1, Math.ceil(w.length / 2))) return {km: best.life_km, mo: best.life_months, note: `Estimat după „${best.name}” din catalog (valori orientative, nu sursă oficială).`}
+  const q = toks(name).filter(x => !AXW.has(x)).map(stem)
+  let best = null, bs = 0, bn = 99
+  CATALOG.forEach(c => {
+    const ns = new Set(toks(c.name).map(stem)), sc = q.filter(x => ns.has(x)).length
+    if (sc > bs || (sc === bs && sc > 0 && ns.size < bn)) { bs = sc; best = c; bn = ns.size }
+  })
+  if (best && bs >= Math.max(1, Math.ceil(q.length / 2))) return {km: best.life_km, mo: best.life_months, hot: best.hot, note: `Estimat după „${best.name}” din catalog (valori orientative, nu sursă oficială).`}
   const k = Object.keys(CAT_NAMES).find(x => CAT_NAMES[x] === category), d = CD[k] || [80000, 60]
-  return {km: d[0], mo: d[1], note: `Estimare orientativă pentru categoria „${category}”. Verifică în manualul mașinii.`}
+  return {km: d[0], mo: d[1], hot: hotFor(name, category), note: `Estimare orientativă pentru categoria „${category}”. Verifică în manualul mașinii.`}
 }
 export const search = (q, t) => { const w = norm(q).split(/\s+/).filter(Boolean); return forType(t).filter(c => w.every(x => norm(c.name).includes(x))) }
