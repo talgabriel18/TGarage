@@ -64,3 +64,4 @@ img{-webkit-user-drag:none}
 .mi{font-size:22px;width:30px;text-align:center}
 .picker{position:absolute;left:8px;right:8px;bottom:8px;background:var(--sheet);-webkit-backdrop-filter:blur(14px);backdrop-filter:blur(14px);border:1px solid var(--bd);border-radius:18px;padding:10px;max-height:48%;overflow:auto;z-index:3}
 .pk{display:flex;flex-wrap:wrap;gap:6px}
+.pin{width:30px;height:30px;border-radius:50%;background:#fff;display:grid;place-items:center;box-shadow:0 2px 8px rgba(0,0,0,.4);font-size:16px}
