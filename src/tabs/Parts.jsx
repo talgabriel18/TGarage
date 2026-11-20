@@ -17,7 +17,7 @@ export default function Parts({D, car, reload, onEdit}) {
     
     <div className="card"><div className="row"><b>Stil de Condus</b><small>{STIL_N[car.style ?? 1]}</small></div>
       <input type="range" min="0" max="2" value={car.style ?? 1} onChange={e => setStyle(+e.target.value)}/>
-      <small className="mu">Estimarea ține cont de km, de vârsta piesei și de ~{ro(car.monthly_km)} km/lună.</small></div>
+      <small className="mu">Estimarea ține cont de km, de vârsta piesei și de ~{ro(car.monthly_km)} km/lună. Estimările sunt orientative și pot conține greșeli; verifică în cartea de service.</small></div>
     <button className="g w" style={{margin: '4px 0 8px'}} onClick={() => setShow(true)}>＋ Adaugă piese din catalog</button>
     <div className="chips">{cats.map(c => <button key={c} className={c === cat ? 'on' : 'g'} onClick={() => setCat(c)}>{c}</button>)}</div>
     <AnimatePresence mode="popLayout">{parts.filter(p => cat === 'Toate' || p.category === cat).map((p, i) =>
@@ -25,8 +25,8 @@ export default function Parts({D, car, reload, onEdit}) {
         <div className="row"><b>{p.name}</b><span style={{display: 'flex', gap: 8, alignItems: 'center'}}><span className="bd" style={{background: p.col}}>{Math.round(p.pct * 100)}%</span><button className="g sm" onClick={() => onEdit({kind: 'part', row: p})}>✎</button></span></div>
         <small className="mu">{p.category} · ultima: {dt(p.last_date)} la {ro(p.last_odo)} km</small>
         <div className="bar"><motion.i initial={{width: 0}} animate={{width: `${p.pct * 100}%`}} transition={{duration: 1, ease: 'easeOut'}} style={{background: p.col}}/></div>
-        <small>Estimat: ~{ro(Math.round(p.rem))} km · ~{durata(p.luni)}</small><br/><small className="mu">Estimare aplicație · {ro(p.life_km)} km / {durata(p.life_months)}{p.official_km || p.official_months ? '' : ' (folosită)'}</small>
-        <br/><small className="mu">Producător · {p.official_km || p.official_months ? `${p.official_km ? ro(p.official_km) + ' km' : '—'} / ${durata(p.official_months)} (folosit)${p.official_src ? ' · ' + p.official_src : ''}` : 'neintrodus. Apasă ✎ ca să adaugi.'}</small></motion.div>)}</AnimatePresence>
+        <small>Estimat: ~{ro(Math.round(p.rem))} km · ~{durata(p.luni)}</small><br/><small className="mu">Estimare orientativă din catalogul aplicației · {ro(p.life_km)} km / {durata(p.life_months)}. Poate conține greșeli.</small>
+        <br/><a className="mu" style={{fontSize: 13}} target="_blank" rel="noreferrer" href={`https://www.google.com/search?q=${encodeURIComponent(`${car.brand} ${car.model || ''} ${car.year || ''} ${p.name} interval înlocuire km`)}`}>🔎 Verifică pe internet</a></motion.div>)}</AnimatePresence>
     <h2 style={{marginTop: 22}}>Istoric service</h2>
     {logs.length === 0 && <p className="mu">Nicio înregistrare încă. Apasă „+ Adaugă”.</p>}
     {logs.map(l => <div key={l.id} className="card"><div className="row"><b>{l.part_name}</b><small>{ron(Number(l.part_cost) + Number(l.labor_cost))}</small></div>
