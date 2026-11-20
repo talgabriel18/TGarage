@@ -5,7 +5,7 @@ export const today = () => new Date().toISOString().slice(0, 10)
 export const STIL = [0.8, 1, 1.15] // Oraș, Mixt, Autostradă
 export const STIL_N = ['Oraș', 'Mixt', 'Autostradă']
 export function wear(p, car) {
-  const LK = p.official_km || p.life_km || 1, LM = p.official_months || p.life_months
+  const LK = p.life_km || 1, LM = p.life_months
   const m = car.monthly_km || 1200, L = LK * STIL[car.style ?? 1]
   const remKm = Math.max(0, L - (car.odometer - (p.last_odo || 0)))
   const remMo = LM ? Math.max(0, LM - (Date.now() - new Date(p.last_date)) / 2.63e9) : Infinity
