@@ -26,11 +26,11 @@ Modul se schimba din Cont > Confidentialitate si date.
 ## Modele 3D
 `public/models/CITESTE.txt`. Pozitiile punctelor si rotatia modelelor: `src/data.js` (HOT_OVERRIDE, ROT).
 
+## Harta
+Harta din tab-ul Consum foloseste Leaflet cu tile-uri OpenStreetMap si Overpass API (benzinarii/statii din jur de 3 km). Pentru trafic mare, foloseste un furnizor de tile-uri cu plata (politica OSM limiteaza folosirea intensa).
+
 ## Redenumire
 Numele e in `src/brand.js`, plus `<title>` si `apple-mobile-web-app-title` din `index.html` si `name` din `public/manifest.webmanifest`.
 
 ## Date si import/export
 `src/catalog.js` (piese), `src/carsdb.js` (masini), Backup JSON si CSV in tab-ul Acte.
-
-## Valori oficiale pentru piese
-Pe un proiect Supabase mai vechi ruleaza o singura data `supabase/migration-v8.sql`. In modul gratuit nu e nevoie de nimic.
