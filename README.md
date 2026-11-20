@@ -31,3 +31,6 @@ Numele e in `src/brand.js`, plus `<title>` si `apple-mobile-web-app-title` din `
 
 ## Date si import/export
 `src/catalog.js` (piese), `src/carsdb.js` (masini), Backup JSON si CSV in tab-ul Acte.
+
+## Valori oficiale pentru piese
+Pe un proiect Supabase mai vechi ruleaza o singura data `supabase/migration-v8.sql`. In modul gratuit nu e nevoie de nimic.
