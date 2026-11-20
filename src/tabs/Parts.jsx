@@ -25,7 +25,8 @@ export default function Parts({D, car, reload, onEdit}) {
         <div className="row"><b>{p.name}</b><span style={{display: 'flex', gap: 8, alignItems: 'center'}}><span className="bd" style={{background: p.col}}>{Math.round(p.pct * 100)}%</span><button className="g sm" onClick={() => onEdit({kind: 'part', row: p})}>✎</button></span></div>
         <small className="mu">{p.category} · ultima: {dt(p.last_date)} la {ro(p.last_odo)} km</small>
         <div className="bar"><motion.i initial={{width: 0}} animate={{width: `${p.pct * 100}%`}} transition={{duration: 1, ease: 'easeOut'}} style={{background: p.col}}/></div>
-        <small>Estimat: ~{ro(Math.round(p.rem))} km · ~{durata(p.luni)}</small><br/><small className="mu">Interval: {ro(p.life_km)} km / {durata(p.life_months)}</small></motion.div>)}</AnimatePresence>
+        <small>Estimat: ~{ro(Math.round(p.rem))} km · ~{durata(p.luni)}</small><br/><small className="mu">Estimare aplicație · {ro(p.life_km)} km / {durata(p.life_months)}{p.official_km || p.official_months ? '' : ' (folosită)'}</small>
+        <br/><small className="mu">Producător · {p.official_km || p.official_months ? `${p.official_km ? ro(p.official_km) + ' km' : '—'} / ${durata(p.official_months)} (folosit)${p.official_src ? ' · ' + p.official_src : ''}` : 'neintrodus. Apasă ✎ ca să adaugi.'}</small></motion.div>)}</AnimatePresence>
     <h2 style={{marginTop: 22}}>Istoric service</h2>
     {logs.length === 0 && <p className="mu">Nicio înregistrare încă. Apasă „+ Adaugă”.</p>}
     {logs.map(l => <div key={l.id} className="card"><div className="row"><b>{l.part_name}</b><small>{ron(Number(l.part_cost) + Number(l.labor_cost))}</small></div>

@@ -6,6 +6,7 @@ import {useUrl} from '../lib/media'
 import {wear, ro, durata, daysTo} from '../lib/util'
 import {Num} from '../components/YearReview'
 import {supabase as sb} from '../lib/supabase'
+import {hotFor} from '../catalog'
 import {posFor, sitesOf} from '../data'
 import {APP} from '../brand'
 
@@ -20,7 +21,7 @@ export default function Garage({D, car, setCar, reload, stage, onService}) {
   const [xr, setXr] = useState(0), [pick, setPick] = useState(null), [site, setSite] = useState(null), [form, setForm] = useState(null)
   const [cm, setCm] = useState(() => { try { return localStorage.getItem('tgarage.cm') || 'zona' } catch { return 'zona' } })
   const setCM = v => { setCm(v); try { localStorage.setItem('tgarage.cm', v) } catch {} }
-  const parts = useMemo(() => car ? D.parts.filter(p => p.vehicle_id === car.id).map(p => ({...p, ...wear(p, car), pos: posFor(car.body, p.hot)})) : [], [D, car])
+  const parts = useMemo(() => car ? D.parts.filter(p => p.vehicle_id === car.id).map(p => { const hot = p.hot && p.hot !== 'caroserie' ? p.hot : hotFor(p.name, p.category); return {...p, hot, ...wear(p, car), pos: posFor(car.body, hot)} }) : [], [D, car])
   const sites = useMemo(() => sitesOf(parts, car?.body), [parts, car?.body])
   const view = useMemo(() => sites.map(s => ({sid: s.id, pos: s.pos, count: s.parts.length, ring: s.col, col: cm === 'zona' ? s.zoneColor : s.col, site: s})), [sites, cm])
   const clear = () => { setSite(null); setPick(null) }
