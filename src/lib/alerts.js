@@ -1,4 +1,5 @@
 import {wear, daysTo, ro, durata} from './util'
+import {priceKeys} from '../data'
 export function computeAlerts(D) {
   const out = [], m = new Date().getMonth() + 1
   D.cars.forEach(c => {
@@ -15,6 +16,7 @@ export function computeAlerts(D) {
     if (last) { const g = Math.floor((Date.now() - new Date(last)) / 864e5); if (g > 45) out.push({id: 'k' + c.id, sev: 0, icon: '📍', title: n, text: `Ultima înregistrare acum ${g} zile. Actualizează kilometrii.`}) }
     if ((m >= 10 && m <= 11) || (m >= 3 && m <= 4)) out.push({id: 'a' + c.id + m, sev: 0, icon: '🛞', title: n, text: m >= 10 ? 'Sezon rece: verifică anvelopele de iarnă' : 'Sezon cald: verifică anvelopele de vară'})
   })
-  Object.entries(D.pdates).forEach(([k, d]) => { if ((Date.now() - new Date(d)) / 864e5 > 14) out.push({id: 'pr' + k, sev: 0, icon: '⛽', title: `Preț ${k}`, text: 'Nu a fost actualizat de peste 14 zile'}) })
+  const rel = new Set(D.cars.flatMap(c => priceKeys(c.powertrain)))
+  Object.entries(D.pdates).forEach(([k, d]) => { if (rel.has(k) && (Date.now() - new Date(d)) / 864e5 > 14) out.push({id: 'pr' + k, sev: 0, icon: '⛽', title: `Preț ${k}`, text: 'Nu a fost actualizat de peste 14 zile'}) })
   return out.sort((a, b) => b.sev - a.sev)
 }
