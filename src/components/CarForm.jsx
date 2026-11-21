@@ -2,7 +2,7 @@ import {useState} from 'react'
 import {motion} from 'framer-motion'
 import {supabase as sb} from '../lib/supabase'
 import {upload} from '../lib/media'
-import {TIPURI, BODY, template} from '../data'
+import {TIPURI, BODY} from '../data'
 import {norm} from '../catalog'
 import {BRANDS, modelsOf, brandKey} from '../carsdb'
 import {decodeVin, mapBody, mapFuel, modelsOnline} from '../lib/vin'
@@ -40,7 +40,6 @@ export default function CarForm({car, onClose, onSaved}) {
       else {
         const {data, error} = await sb.from('vehicles').insert(row).select().single(); if (error) throw error
         id = data.id
-        await sb.from('vehicle_parts').insert(template(row.powertrain).map(p => ({...p, vehicle_id: id, last_odo: row.odometer})))
       }
       await onSaved(id)
     } catch (e) { setErr(e.message); setBusy(false) }

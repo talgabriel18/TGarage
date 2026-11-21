@@ -28,11 +28,11 @@ export default function YearReview({D, car, onClose}) {
   const cards = [
     {k: 'km', i: '🛣️', t: 'Kilometri parcurși', v: <><Num v={km}/> km</>, ok: km > 0},
     {k: 'tot', i: '💸', t: 'Cheltuieli totale', v: <Num v={tot} f={n => ron(n)}/>, ok: tot > 0},
-    {k: 'f', i: '⛽', t: u === 'kWh' ? 'Încărcare' : 'Combustibil', v: <Num v={sF} f={n => ron(n)}/>, s: `${f.length} alimentări`, ok: sF > 0},
+    {k: 'f', i: '⛽', t: u === 'kWh' ? 'Încărcare' : 'Combustibil', v: <Num v={sF} f={n => ron(n)}/>, s: `${f.length} ${u === 'kWh' ? 'încărcări' : 'alimentări'}`, ok: sF > 0},
     {k: 's', i: '🔧', t: 'Service și piese', v: <Num v={sS} f={n => ron(n)}/>, s: `${l.length} intervenții`, ok: sS > 0},
     {k: 'e', i: '🧾', t: 'Alte cheltuieli', v: <Num v={sE} f={n => ron(n)}/>, ok: sE > 0},
     {k: 'b', i: '🏆', t: 'Cel mai scump service', v: big ? ron(cost(big)) : '', s: big ? `${big.part_name} · ${dt(big.date)}` : '', ok: !!big},
-    {k: 'c', i: '🎯', t: 'Cea mai ieftină alimentare', v: priced[0] ? `${Number(priced[0].price_per_unit).toFixed(2).replace('.', ',')} RON/${u}` : '', s: priced[0] ? `${priced[0].station || ''} ${dt(priced[0].date)}` : '', ok: priced.length > 1},
+    {k: 'c', i: '🎯', t: u === 'kWh' ? 'Cea mai ieftină încărcare' : 'Cea mai ieftină alimentare', v: priced[0] ? `${Number(priced[0].price_per_unit).toFixed(2).replace('.', ',')} RON/${u}` : '', s: priced[0] ? `${priced[0].station || ''} ${dt(priced[0].date)}` : '', ok: priced.length > 1},
     {k: 'st', i: '📍', t: 'Stația preferată', v: fav ? fav[0] : '', s: fav ? `${fav[1]} vizite` : '', ok: !!fav},
   ].filter(c => c.ok)
   const share = async () => {

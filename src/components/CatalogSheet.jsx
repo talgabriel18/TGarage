@@ -22,6 +22,7 @@ export default function CatalogSheet({car, parts, onClose, onSaved}) {
     <motion.div className="sheet" initial={{y: '100%'}} animate={{y: 0}} transition={{type: 'spring', stiffness: 260, damping: 28}}>
       <div className="row"><h2>Catalog de piese</h2><button className="g" onClick={onClose}>✕</button></div>
       <input placeholder="🔎 Caută (ex. bujii, amortizor, cardan)" value={q} onChange={e => setQ(e.target.value)}/>
+      <button className="g sm" style={{margin: '4px 0'}} onClick={() => setSel(s => { const x = {...s}; forType(car.powertrain).filter(c => c.def && !have.has(c.name.toLowerCase())).forEach(c => { x[c.name] = 1 }); return x })}>Selectează piesele uzuale</button>
       <small className="mu">Piesele noi pornesc de la data de azi. Cu ✎ poți seta ultima înlocuire reală.</small>
       {items.length === 0 && <p className="mu">Nicio piesă disponibilă (sau toate sunt deja urmărite).</p>}
       {CATS.map(cat => { const L = items.filter(c => c.category === cat); return L.length > 0 && <div key={cat} style={{marginTop: 10}}><b>{cat}</b>

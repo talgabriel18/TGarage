@@ -15,7 +15,7 @@ export default function NearbyMap({kind}) {
     if (!navigator.geolocation) return setMsg('Locația nu e disponibilă pe acest dispozitiv.')
     setBusy(true); setMsg('Se caută locația…')
     navigator.geolocation.getCurrentPosition(p => { setPos([p.coords.latitude, p.coords.longitude]); setBusy(false); setMsg('') },
-      () => { setBusy(false); setMsg('Nu am primit acces la locație. Permite-l din setările telefonului.') }, {enableHighAccuracy: true, timeout: 12000})
+      err => { setBusy(false); setMsg(err && err.code === 1 ? 'Accesul la locație e blocat. Pe iPhone: Setări → Confidențialitate și securitate → Servicii de localizare → Site-uri Safari → „Cât timp folosești aplicația”. Apoi reîncarcă și apasă din nou. În aplicația de pe ecranul principal, alege „Permite” când ți se cere.' : err && err.code === 3 ? 'Găsirea locației a durat prea mult. Încearcă din nou, de preferat afară.' : 'Locația nu e disponibilă acum. Verifică dacă Serviciile de localizare sunt pornite.') }, {enableHighAccuracy: true, timeout: 12000})
   }
   useEffect(() => {
     if (!pos || !el.current) return

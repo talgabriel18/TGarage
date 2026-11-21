@@ -1,8 +1,9 @@
 import {Canvas, useFrame, useThree} from '@react-three/fiber'
 import {OrbitControls, useGLTF, useTexture} from '@react-three/drei'
 import * as THREE from 'three'
+import {RoomEnvironment} from 'three/examples/jsm/environments/RoomEnvironment.js'
 import React, {Suspense, useEffect, useMemo, useRef, useState} from 'react'
-import {BODY, ROT} from '../data'
+import {BODY, MODEL_CFG} from '../data'
 
 class Boundary extends React.Component {
   state = {e: false}
@@ -34,12 +35,12 @@ function Glb({url, body, color, xray}) {
     o.scale.setScalar(3.6 / (Math.max(b.max.x - b.min.x, b.max.z - b.min.z) || 1))
     b.setFromObject(o); const c = b.getCenter(new THREE.Vector3()); o.position.set(-c.x, -b.min.y, -c.z)
     o.traverse(m => { if (m.isMesh && m.material) {
-      const cl = mats(m).map(x => { const y = x.clone(); y.userData.paint = !SKIP.test(y.name) && y.color && (y.color.r + y.color.g + y.color.b) > .25; return y })
+      const cl = mats(m).map(x => { const y = x.clone(); y.userData.paint = !y.map && !y.emissiveMap && !SKIP.test(y.name) && y.color && (y.color.r + y.color.g + y.color.b) > .25; y.userData.t0 = y.transparent; y.userData.o0 = y.opacity; if (y.metalness > .35) y.metalness = .2; if (y.map && y.color) y.color.setScalar(1.55); return y })
       m.material = Array.isArray(m.material) ? cl : cl[0] } })
     return o }, [scene])
   useEffect(() => obj.traverse(m => { if (!m.isMesh) return
-    mats(m).forEach(x => { if (x.userData.paint) x.color.set(color); x.transparent = true; x.opacity = 1 - xray * .8; x.needsUpdate = true }) }), [obj, color, xray])
-  return <group rotation={[0, ROT[body] || 0, 0]}><primitive object={obj}/></group>
+    mats(m).forEach(x => { if (x.userData.paint) x.color.set(color); const on = xray > .01; x.transparent = on ? true : !!x.userData.t0; x.opacity = on ? x.userData.o0 * (1 - xray * .8) : x.userData.o0; x.depthWrite = !on; x.needsUpdate = true }) }), [obj, color, xray])
+  return <group rotation={[0, (MODEL_CFG[body] || {}).rot || 0, 0]}><primitive object={obj}/></group>
 }
 
 const BT = {}
@@ -158,6 +159,16 @@ function Shadow() {
   return <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, .014, 0]}><planeGeometry args={[4.6, 2.6]}/><meshBasicMaterial map={tex} transparent depthWrite={false}/></mesh>
 }
 
+function Env() {
+  const {gl, scene} = useThree()
+  useEffect(() => {
+    let t, p
+    try { p = new THREE.PMREMGenerator(gl); t = p.fromScene(new RoomEnvironment(), .04).texture; scene.environment = t; scene.environmentIntensity = .6 } catch {}
+    return () => { try { scene.environment = null; if (t) t.dispose(); if (p) p.dispose() } catch {} }
+  }, [gl, scene])
+  return null
+}
+
 function Rig({focus, controls, stage}) {
   const {camera} = useThree(), frames = useRef(0)
   const g = stage === 'garaj'
@@ -182,7 +193,7 @@ export default function Car3D({car, parts, xray, focus, onPick, onMiss, stage}) 
   }, [car.id, car.body, car.model_url])
   const proc = <Procedural body={car.body} color={color} xray={xray}/>
   return <Canvas camera={{position: stage === 'garaj' ? [2.2, 1.9, 3] : [4, 3, 5.5], fov: stage === 'garaj' ? 58 : 45}} dpr={[1, 2]} onPointerMissed={() => onMiss && onMiss()}>
-    <ambientLight intensity={.8}/><directionalLight position={[3, 5, 4]} intensity={1.1}/>
+    <ambientLight intensity={.8}/><directionalLight position={[3, 5, 4]} intensity={1.1}/><Env/>
     <Suspense fallback={null}>{url ? <Boundary key={url} fallback={proc}><Glb url={url} body={car.body} color={color} xray={xray}/></Boundary> : proc}</Suspense>
     <Suspense fallback={null}><Stage kind={stage}/></Suspense>
     {stage !== 'garaj' && <Shadow/>}
