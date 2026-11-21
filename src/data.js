@@ -20,9 +20,13 @@ export const BODY = {
 // Rotația modelului .glb pe axa Y (radiani). Fața mașinii trebuie să fie spre +X. Ajustează dacă apare întors.
 // Pozitionare modele .glb: rot = rotatie pe Y (fata masinii trebuie sa ajunga spre +X), wheels = pozitia rotilor in scena (f = fata, r = spate, y = inaltime butuc, z = jumatate din ecartament)
 export const MODEL_CFG = {
-  SUV: {rot: Math.PI / 2, wheels: {f: 1.1, r: -1.1, y: .31, z: .9}},
-  Hatchback: {rot: Math.PI / 2, wheels: {f: 1.0, r: -1.15, y: .32, z: .86}},
-  Sedan: {rot: Math.PI / 2, wheels: {f: 1.04, r: -.97, y: .3, z: .83}},
+  // sedan.glb: fata modelului e spre -Z, deci rot = -90 grade. roles = ce material e ce parte (pentru culori). hubMeshes = rotile (capacele devin culoarea jantelor)
+  Sedan: {
+    rot: -Math.PI / 2,
+    wheels: {f: 1.18, r: -.84, y: .23, z: .7},
+    roles: {'Material.001': 'body', 'Material.002': 'trim', 'Material.004': 'glass', 'Material.005': 'head', 'Material.007': 'head', 'Material.006': 'tail', 'Material.003': 'rim'},
+    hubMeshes: /Cube\.?00[5-8]/,
+  },
 }
 export const ROT = Object.fromEntries(Object.entries(MODEL_CFG).map(([k, v]) => [k, v.rot]))
 // Poziții puncte pulsatorii [x,y,z], pentru modelul de bază. Suprascrie per caroserie după ce pui modelele .glb.
@@ -57,3 +61,27 @@ export function sitesOf(parts, body) {
   Object.entries(groups).forEach(([k, L]) => out.push({id: k, name: KEYNAME[k] || k, pos: posFor(body, k), parts: L, col: worstOf(L).col, zoneColor: (ZONES[ZONE[k]] || [])[1] || worstOf(L).col, zoneName: (ZONES[ZONE[k]] || [])[0] || KEYNAME[k] || k}))
   return out
 }
+
+// ---- Culorile mașinii (se salvează în coloana vehicles.color ca text: #caroserie|f=finisaj|g=geamuri|h=faruri|t=stopuri|r=jante|k=elemente negre)
+export const LOOK_DEF = {body: '#35507a', finish: 'lucios', glass: '#9ec9d8', head: '#fff1cf', tail: '#ff2a2a', rim: '#c9ced8', trim: '#1c1d21'}
+const LK = {f: 'finish', g: 'glass', h: 'head', t: 'tail', r: 'rim', k: 'trim'}
+const HEX = /^#[0-9a-f]{6}$/i
+export function parseLook(s) {
+  const L = {...LOOK_DEF}
+  if (!s) return L
+  String(s).split('|').forEach((t, i) => {
+    if (i === 0 && HEX.test(t)) L.body = t
+    else { const [k, v] = t.split('='); if (LK[k] && v && (k === 'f' || HEX.test(v))) L[LK[k]] = v }
+  })
+  return L
+}
+export const stringifyLook = L => [L.body, ...Object.entries(LK).map(([k, f]) => `${k}=${L[f]}`)].join('|')
+export const FINISHES = [['lucios', 'Lucios', 'vopsea cu lac, cu reflexii puternice (aspect de mașină nouă, ceruită).'], ['satin', 'Satin', 'luciu discret, reflexii moi.'], ['mat', 'Mat', 'fără reflexii, ca o folie mată.'], ['metal', 'Metalizat', 'sclipire metalică, ca la vopseaua metalizată.']]
+export const LOOK_PARTS = [
+  {k: 'body', t: 'Caroserie', d: 'Vopseaua mașinii: portiere, capotă, plafon, aripi și oglinzi.', sw: [['Alb', '#f4f4f4'], ['Negru', '#1c1d21'], ['Gri', '#8d9199'], ['Argintiu', '#c9ced8'], ['Roșu', '#b91c1c'], ['Albastru', '#1d4ed8'], ['Verde', '#15803d'], ['Galben', '#f5c518'], ['Portocaliu', '#ea580c'], ['Mov', '#6d28d9'], ['Maro', '#7c4a2d'], ['Oțel', '#35507a']]},
+  {k: 'glass', t: 'Geamuri', d: 'Culoarea geamurilor: clar, fumuriu sau colorat.', sw: [['Clar', '#9ec9d8'], ['Fumuriu', '#2b3a42'], ['Negru', '#0c0f12'], ['Albastru', '#3b82f6'], ['Bronz', '#8b6b4a']]},
+  {k: 'head', t: 'Faruri', d: 'Lumina farurilor din față (și a luminilor albe din spate). Doar pentru aspect: în realitate farurile sunt albe sau galbene.', sw: [['Alb cald', '#fff1cf'], ['Alb rece', '#e6f1ff'], ['Galben', '#ffd84d'], ['Albastru', '#5aa7ff']]},
+  {k: 'tail', t: 'Stopuri', d: 'Luminile din spate (frână și poziție).', sw: [['Roșu', '#ff2a2a'], ['Roșu închis', '#b91c1c'], ['Portocaliu', '#ff7a1a'], ['Vișiniu', '#7f1d1d']]},
+  {k: 'rim', t: 'Jante', d: 'Culoarea jantelor.', sw: [['Argintiu', '#c9ced8'], ['Negru', '#15171c'], ['Auriu', '#d4af37'], ['Bronz', '#b08d57'], ['Alb', '#f1f1f1']]},
+  {k: 'trim', t: 'Elemente negre', d: 'Barele, pragurile, grila și anvelopele.', sw: [['Negru', '#1c1d21'], ['Gri închis', '#3a3d45'], ['Argintiu', '#9aa0ab']]},
+]
