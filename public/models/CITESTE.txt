@@ -1,5 +1,5 @@
-Pune aici modele 3D in format .glb, cu EXACT aceste nume:
+Modele 3D in format .glb, cu EXACT aceste nume (litere mici, Vercel face diferenta intre mari si mici):
 sedan.glb  suv.glb  hatchback.glb  break.glb  coupe.glb  pickup.glb
-Cauta modele cu licenta libera (CC0 sau CC-BY) si verifica licenta. Ideal sub 5 MB fiecare.
-Daca un fisier lipseste, aplicatia foloseste automat modelul desenat din cod pentru acea caroserie.
-Daca masina apare cu fata in directia gresita sau mica/mare, ajusteaza ROT in src/data.js.
+Acum exista: sedan.glb, suv.glb, hatchback.glb. Pentru break, coupe si pickup se foloseste modelul desenat din cod.
+Orientarea, rotatia si pozitia rotilor pentru fiecare model se ajusteaza in src/data.js, la MODEL_CFG.
+Verifica licenta modelelor inainte de lansare publica.
