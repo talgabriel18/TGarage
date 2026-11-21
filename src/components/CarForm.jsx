@@ -2,7 +2,7 @@ import {useState} from 'react'
 import {motion} from 'framer-motion'
 import {supabase as sb} from '../lib/supabase'
 import {upload} from '../lib/media'
-import {TIPURI, BODY} from '../data'
+import {TIPURI, BODY, parseLook, stringifyLook} from '../data'
 import {norm} from '../catalog'
 import {BRANDS, modelsOf, brandKey} from '../carsdb'
 import {decodeVin, mapBody, mapFuel, modelsOnline} from '../lib/vin'
@@ -10,7 +10,7 @@ import {decodeVin, mapBody, mapFuel, modelsOnline} from '../lib/vin'
 const CY = new Date().getFullYear(), YEARS = Array.from({length: CY - 1988}, (_, i) => CY + 1 - i)
 
 export default function CarForm({car, onClose, onSaved}) {
-  const [f, setF] = useState(car ? {...car, year: car.year ?? '', odometer: car.odometer ?? ''} : {brand: '', model: '', vin: '', year: '', odometer: '', monthly_km: 1200, powertrain: 'Benzină', body: 'Sedan', color: '#35507a'})
+  const [f, setF] = useState(car ? {...car, year: car.year ?? '', odometer: car.odometer ?? '', color: parseLook(car.color).body} : {brand: '', model: '', vin: '', year: '', odometer: '', monthly_km: 1200, powertrain: 'Benzină', body: 'Sedan', color: '#35507a'})
   const [file, setFile] = useState(null), [busy, setBusy] = useState(false), [err, setErr] = useState(''), [info, setInfo] = useState(''), [online, setOnline] = useState([])
   const set = (k, v) => setF({...f, [k]: v})
   const bk = brandKey(f.brand), models = bk ? modelsOf(bk) : []
@@ -33,7 +33,7 @@ export default function CarForm({car, onClose, onSaved}) {
     if (!f.brand.trim()) return
     setBusy(true); setErr('')
     try {
-      const row = {brand: bk || f.brand.trim(), model: f.model, vin: f.vin ? f.vin.trim().toUpperCase() : null, year: +f.year || null, odometer: +f.odometer || 0, monthly_km: +f.monthly_km || 1200, powertrain: f.powertrain, body: f.body, color: f.color}
+      const row = {brand: bk || f.brand.trim(), model: f.model, vin: f.vin ? f.vin.trim().toUpperCase() : null, year: +f.year || null, odometer: +f.odometer || 0, monthly_km: +f.monthly_km || 1200, powertrain: f.powertrain, body: f.body, color: car ? stringifyLook({...parseLook(car.color), body: f.color}) : f.color}
       if (file) row.image_url = await upload(file)
       let id = car?.id
       if (car) { const {error} = await sb.from('vehicles').update(row).eq('id', car.id); if (error) throw error }
@@ -64,7 +64,7 @@ export default function CarForm({car, onClose, onSaved}) {
       <input type="number" placeholder="Km pe lună (medie)" value={f.monthly_km} onChange={e => set('monthly_km', e.target.value)}/>
       <select value={f.powertrain} onChange={e => set('powertrain', e.target.value)}>{opts.map(t => <option key={t} value={t}>{allowed.includes(t) ? '★ ' : ''}{t}</option>)}</select>
       <select value={f.body} onChange={e => set('body', e.target.value)}>{Object.keys(BODY).map(t => <option key={t}>{t}</option>)}</select>
-      <div className="row"><span>Culoare</span><input type="color" style={{width: 90}} value={f.color || '#35507a'} onChange={e => set('color', e.target.value)}/></div>
+      <div className="row"><span>Culoare caroserie<br/><small className="mu">Faruri, geamuri, jante: din Garaj → 🎨 Culorile mașinii</small></span><input type="color" style={{width: 90}} value={f.color || '#35507a'} onChange={e => set('color', e.target.value)}/></div>
       <small className="mu">Poză mașină (opțional)</small><input type="file" accept="image/*" onChange={e => setFile(e.target.files[0])}/>
       {err && <p style={{color: 'var(--ur)'}}>{err}</p>}
       <motion.button whileTap={{scale: .96}} className="w" disabled={busy} onClick={save}>{busy ? 'Se salvează…' : 'Salvează'}</motion.button>

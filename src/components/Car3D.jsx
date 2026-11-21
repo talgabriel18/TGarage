@@ -3,7 +3,7 @@ import {OrbitControls, useGLTF, useTexture} from '@react-three/drei'
 import * as THREE from 'three'
 import {RoomEnvironment} from 'three/examples/jsm/environments/RoomEnvironment.js'
 import React, {Suspense, useEffect, useMemo, useRef, useState} from 'react'
-import {BODY, MODEL_CFG} from '../data'
+import {BODY, MODEL_CFG, parseLook} from '../data'
 
 class Boundary extends React.Component {
   state = {e: false}
@@ -11,36 +11,75 @@ class Boundary extends React.Component {
   render() { return this.state.e ? this.props.fallback : this.props.children }
 }
 
-function Procedural({body, color, xray}) {
+const FIN = {lucios: {metalness: .35, roughness: .2, clearcoat: 1, clearcoatRoughness: .04}, satin: {metalness: .25, roughness: .5, clearcoat: .35, clearcoatRoughness: .3}, mat: {metalness: .05, roughness: .9, clearcoat: 0, clearcoatRoughness: .5}, metal: {metalness: .9, roughness: .3, clearcoat: .6, clearcoatRoughness: .15}}
+
+function Procedural({body, look, xray}) {
   const [pts, gl] = BODY[body] || BODY.Sedan
   const mk = (p, o) => { const s = new THREE.Shape(); p.forEach(([x, y], i) => i ? s.lineTo(x, y) : s.moveTo(x, y)); return new THREE.ExtrudeGeometry(s, o) }
   const bodyG = useMemo(() => { const g = mk(pts, {depth: 1.5, bevelEnabled: true, bevelSize: .1, bevelThickness: .1, bevelSegments: 4}); g.translate(0, .12, -.75); return g }, [body])
   const glassG = useMemo(() => { const g = mk(gl, {depth: 1.76, bevelEnabled: false}); g.translate(0, .12, -.88); return g }, [body])
+  const fx = Math.max(...pts.map(p => p[0])) + .1, rx = Math.min(...pts.map(p => p[0])) - .1, g2 = gl[gl.length - 1], fin = FIN[look.finish] || FIN.lucios
   return <group>
-    <mesh geometry={bodyG}><meshStandardMaterial color={color} metalness={.8} roughness={.3} transparent opacity={1 - xray * .8}/></mesh>
-    <mesh geometry={glassG}><meshStandardMaterial color="#0a0f18" metalness={.9} roughness={.1}/></mesh>
+    <mesh geometry={bodyG}><meshPhysicalMaterial color={look.body} {...fin} transparent opacity={1 - xray * .8}/></mesh>
+    <mesh geometry={glassG}><meshStandardMaterial color={look.glass} metalness={.9} roughness={.08} transparent opacity={.8 * (1 - xray * .5)}/></mesh>
+    {[.52, -.52].map(z => <mesh key={'h' + z} position={[fx, .6, z]}><boxGeometry args={[.07, .13, .32]}/><meshStandardMaterial color={look.head} emissive={look.head} emissiveIntensity={.9}/></mesh>)}
+    {[.52, -.52].map(z => <mesh key={'t' + z} position={[rx, .66, z]}><boxGeometry args={[.07, .12, .3]}/><meshStandardMaterial color={look.tail} emissive={look.tail} emissiveIntensity={.8}/></mesh>)}
+    <mesh position={[fx - .02, .52, 0]}><boxGeometry args={[.06, .13, .5]}/><meshStandardMaterial color={look.trim} roughness={.6}/></mesh>
+    <mesh position={[fx - .06, .36, 0]}><boxGeometry args={[.1, .12, 1.45]}/><meshStandardMaterial color={look.trim} roughness={.6}/></mesh>
+    <mesh position={[rx + .06, .36, 0]}><boxGeometry args={[.1, .12, 1.45]}/><meshStandardMaterial color={look.trim} roughness={.6}/></mesh>
+    {[1, -1].map(k => <mesh key={'m' + k} position={[g2[0] + .06, 1.16, k * .95]}><boxGeometry args={[.13, .1, .09]}/><meshPhysicalMaterial color={look.body} {...fin}/></mesh>)}
     {[[1.15, .82], [1.15, -.82], [-1.15, .82], [-1.15, -.82]].map(([x, z], i) => <group key={i} position={[x, .38, z]} rotation={[Math.PI / 2, 0, 0]}>
-      <mesh><cylinderGeometry args={[.38, .38, .28, 28]}/><meshStandardMaterial color="#0d0d0f"/></mesh>
-      <mesh><cylinderGeometry args={[.24, .24, .3, 16]}/><meshStandardMaterial color="#c9ced8" metalness={1} roughness={.25}/></mesh></group>)}
+      <mesh><cylinderGeometry args={[.38, .38, .28, 28]}/><meshStandardMaterial color={look.trim} roughness={.8}/></mesh>
+      <mesh><cylinderGeometry args={[.24, .24, .3, 16]}/><meshStandardMaterial color={look.rim} metalness={.9} roughness={.25}/></mesh></group>)}
   </group>
 }
 
 const SKIP = /glass|window|tire|tyre|rubber|wheel|light|chrome|interior|black|plastic|lamp|rim/i
 const mats = m => Array.isArray(m.material) ? m.material : [m.material]
 
-function Glb({url, body, color, xray}) {
-  const {scene} = useGLTF(url)
+// Ce parte e fiecare material: din MODEL_CFG.roles (model cunoscut) sau ghicit dupa nume (model necunoscut)
+function roleOf(x, mesh, cfg) {
+  if (cfg.roles) { let r = cfg.roles[x.name] || null; if (r === 'body' && cfg.hubMeshes && cfg.hubMeshes.test(mesh.name)) r = 'rim'; return r }
+  const n = x.name || ''
+  if (/glass|window|geam/i.test(n)) return 'glass'
+  if (/head|faruri/i.test(n)) return 'head'
+  if (/tail|stop|brake/i.test(n)) return 'tail'
+  if (!x.map && !x.emissiveMap && !SKIP.test(n) && x.color && (x.color.r + x.color.g + x.color.b) > .25) return 'body'
+  return null
+}
+const toPhysical = y => { const p = new THREE.MeshPhysicalMaterial({name: y.name, color: y.color.clone(), metalness: y.metalness, roughness: y.roughness, flatShading: y.flatShading, side: y.side}); p.userData = y.userData; return p }
+function applyRole(x, role, L) {
+  const c = {body: L.body, glass: L.glass, head: L.head, tail: L.tail, rim: L.rim, trim: L.trim}[role]
+  x.color.set(c)
+  if (role === 'body') Object.assign(x, FIN[L.finish] || FIN.lucios)
+  else if (role === 'glass') { x.metalness = .9; x.roughness = .08; x.userData.t0 = true; x.userData.o0 = .8 }
+  else if (role === 'head' || role === 'tail') { x.emissive.set(c); x.emissiveIntensity = role === 'head' ? .9 : .8; x.metalness = 0; x.roughness = .3 }
+  else if (role === 'rim') { x.metalness = .85; x.roughness = .25 }
+  else { x.metalness = .1; x.roughness = .6 }
+}
+
+function Glb({url, body, look, xray}) {
+  const {scene} = useGLTF(url), cfg = MODEL_CFG[body] || {}
   const obj = useMemo(() => {
     const o = scene.clone(true), b = new THREE.Box3().setFromObject(o)
     o.scale.setScalar(3.6 / (Math.max(b.max.x - b.min.x, b.max.z - b.min.z) || 1))
     b.setFromObject(o); const c = b.getCenter(new THREE.Vector3()); o.position.set(-c.x, -b.min.y, -c.z)
     o.traverse(m => { if (m.isMesh && m.material) {
-      const cl = mats(m).map(x => { const y = x.clone(); y.userData.paint = !y.map && !y.emissiveMap && !SKIP.test(y.name) && y.color && (y.color.r + y.color.g + y.color.b) > .25; y.userData.t0 = y.transparent; y.userData.o0 = y.opacity; if (y.metalness > .35) y.metalness = .2; if (y.map && y.color) y.color.setScalar(1.55); return y })
+      const cl = mats(m).map(x => {
+        let y = x.clone(); y.userData.t0 = y.transparent; y.userData.o0 = y.opacity; y.userData.role = roleOf(y, m, cfg)
+        if (y.userData.role === 'body') y = toPhysical(y)
+        if (!y.userData.role && y.metalness > .35) y.metalness = .2
+        if (y.map && y.color && !y.userData.role) y.color.setScalar(1.55)
+        return y })
       m.material = Array.isArray(m.material) ? cl : cl[0] } })
     return o }, [scene])
   useEffect(() => obj.traverse(m => { if (!m.isMesh) return
-    mats(m).forEach(x => { if (x.userData.paint) x.color.set(color); const on = xray > .01; x.transparent = on ? true : !!x.userData.t0; x.opacity = on ? x.userData.o0 * (1 - xray * .8) : x.userData.o0; x.depthWrite = !on; x.needsUpdate = true }) }), [obj, color, xray])
-  return <group rotation={[0, (MODEL_CFG[body] || {}).rot || 0, 0]}><primitive object={obj}/></group>
+    mats(m).forEach(x => {
+      const r = x.userData.role; if (r) applyRole(x, r, look)
+      const on = xray > .01, o0 = x.userData.o0 == null ? 1 : x.userData.o0
+      x.transparent = on ? true : !!x.userData.t0; x.opacity = on ? o0 * (1 - xray * .8) : o0; x.depthWrite = !on; x.needsUpdate = true
+    }) }), [obj, look, xray])
+  return <group rotation={[0, cfg.rot || 0, 0]}><primitive object={obj}/></group>
 }
 
 const BT = {}
@@ -183,18 +222,18 @@ function Rig({focus, controls, stage}) {
   return null
 }
 
-export default function Car3D({car, parts, xray, focus, onPick, onMiss, stage}) {
+export default function Car3D({car, parts, xray, focus, onPick, onMiss, stage, look}) {
   const controls = useRef(), [url, setUrl] = useState(null)
-  const color = car.color || '#35507a'
+  const lk = useMemo(() => look || parseLook(car.color), [look, car.color])
   useEffect(() => {
     const u = car.model_url || `/models/${car.body.toLowerCase()}.glb`; let ok = true; setUrl(null)
     fetch(u, {method: 'HEAD'}).then(r => { if (ok && r.ok && !(r.headers.get('content-type') || '').includes('text/html')) setUrl(u) }).catch(() => {})
     return () => { ok = false }
   }, [car.id, car.body, car.model_url])
-  const proc = <Procedural body={car.body} color={color} xray={xray}/>
+  const proc = <Procedural body={car.body} look={lk} xray={xray}/>
   return <Canvas camera={{position: stage === 'garaj' ? [2.2, 1.9, 3] : [4, 3, 5.5], fov: stage === 'garaj' ? 58 : 45}} dpr={[1, 2]} onPointerMissed={() => onMiss && onMiss()}>
     <ambientLight intensity={.8}/><directionalLight position={[3, 5, 4]} intensity={1.1}/><Env/>
-    <Suspense fallback={null}>{url ? <Boundary key={url} fallback={proc}><Glb url={url} body={car.body} color={color} xray={xray}/></Boundary> : proc}</Suspense>
+    <Suspense fallback={null}>{url ? <Boundary key={url} fallback={proc}><Glb url={url} body={car.body} look={lk} xray={xray}/></Boundary> : proc}</Suspense>
     <Suspense fallback={null}><Stage kind={stage}/></Suspense>
     {stage !== 'garaj' && <Shadow/>}
     {parts.map(p => <Hot key={p.sid || p.id} p={p} onPick={onPick}/>)}
