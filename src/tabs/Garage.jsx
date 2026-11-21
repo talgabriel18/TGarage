@@ -7,7 +7,8 @@ import {wear, ro, durata, daysTo, dt} from '../lib/util'
 import {Num} from '../components/YearReview'
 import {supabase as sb} from '../lib/supabase'
 import {hotFor} from '../catalog'
-import {posFor, sitesOf} from '../data'
+import {posFor, sitesOf, parseLook, stringifyLook} from '../data'
+import LookPanel from '../components/LookPanel'
 import {APP} from '../brand'
 
 function Gauge({p, col}) {
@@ -18,13 +19,15 @@ function Gauge({p, col}) {
 }
 
 export default function Garage({D, car, setCar, reload, stage, onService}) {
-  const [xr, setXr] = useState(0), [pick, setPick] = useState(null), [site, setSite] = useState(null), [form, setForm] = useState(null), [insp, setInsp] = useState(null)
+  const [xr, setXr] = useState(0), [pick, setPick] = useState(null), [site, setSite] = useState(null), [form, setForm] = useState(null), [insp, setInsp] = useState(null), [lookOpen, setLookOpen] = useState(false), [lk, setLk] = useState(null)
   const [cm, setCm] = useState(() => { try { return localStorage.getItem('tgarage.cm') || 'zona' } catch { return 'zona' } })
   const setCM = v => { setCm(v); try { localStorage.setItem('tgarage.cm', v) } catch {} }
   const parts = useMemo(() => car ? D.parts.filter(p => p.vehicle_id === car.id).map(p => { const hot = p.hot && p.hot !== 'caroserie' ? p.hot : hotFor(p.name, p.category); return {...p, hot, ...wear(p, car), pos: posFor(car.body, hot)} }) : [], [D, car])
   const sites = useMemo(() => sitesOf(parts, car?.body), [parts, car?.body])
   const view = useMemo(() => sites.map(s => ({sid: s.id, pos: s.pos, count: s.parts.length, ring: s.col, col: cm === 'zona' ? s.zoneColor : s.col, site: s})), [sites, cm])
   const clear = () => { setSite(null); setPick(null) }
+  const look = lk || parseLook(car && car.color)
+  const saveLook = async () => { await sb.from('vehicles').update({color: stringifyLook(look)}).eq('id', car.id); setLk(null); setLookOpen(false); reload(car.id) }
   const cur = insp && insp.i < insp.ids.length ? parts.find(p => p.id === insp.ids[insp.i]) : null
   const checks = useMemo(() => { try { return JSON.parse(localStorage.getItem('tgarage.checks') || '{}') } catch { return {} } }, [insp])
   const focusPart = id => { const p = parts.find(x => x.id === id); if (!p) return; setSite(sites.find(s => s.parts.some(x => x.id === id)) || null); setPick(p) }
@@ -46,14 +49,16 @@ export default function Garage({D, car, setCar, reload, stage, onService}) {
   const rd = parts.length === 0 ? ['Adaugă piese în tab-ul Piese', '🔧'] : urgent.some(p => p.pct < .1) ? ['Necesită service', '🚨'] : avg > .6 && urgent.length === 0 ? ['Gata de drum', '✅'] : ['Verifică piesele', '⚠️']
   return <>
     
-    {D.cars.length > 0 && <select value={car?.id} onChange={e => { setCar(e.target.value); clear(); setInsp(null) }}>{D.cars.map(c => <option key={c.id} value={c.id}>{c.brand} {c.model} · {c.powertrain} · {c.body}</option>)}</select>}
+    {D.cars.length > 0 && <select value={car?.id} onChange={e => { setCar(e.target.value); clear(); setInsp(null); setLk(null) }}>{D.cars.map(c => <option key={c.id} value={c.id}>{c.brand} {c.model} · {c.powertrain} · {c.body}</option>)}</select>}
     <div className="grid" style={{margin: '6px 0'}}><button className="g" onClick={() => setForm('new')}>＋ Mașină nouă</button>{car && <button className="g" onClick={() => setForm('edit')}>✎ Editează</button>}</div>
     {car ? <>
-      <div className="card cv" style={{marginTop: 10, position: 'relative'}}><Suspense fallback={<div className="shimmer"/>}><Car3D car={car} parts={view} xray={xr / 100} focus={site ? site.pos : null} onPick={onSite} onMiss={clear} stage={stage}/></Suspense>
+      <div className="card cv" style={{marginTop: 10, position: 'relative'}}><Suspense fallback={<div className="shimmer"/>}><Car3D car={car} look={look} parts={view} xray={xr / 100} focus={site ? site.pos : null} onPick={onSite} onMiss={clear} stage={stage}/></Suspense>
         {site && site.parts.length > 1 && !insp && <div className="picker"><div className="row" style={{marginBottom: 8}}><b>{site.name} · {site.parts.length} piese</b><button className="g sm" onClick={clear}>✕</button></div>
           <div className="pk">{[...site.parts].sort((a, b) => a.pct - b.pct).map(p => <button key={p.id} className={pick && pick.id === p.id ? 'sm' : 'g sm'} onClick={() => setPick(p)}><b style={{color: p.col}}>●</b> {p.name} {Math.round(p.pct * 100)}%</button>)}</div></div>}</div>
       {!insp && <><p key={pick ? pick.name : 'none'} className={pick ? 'mu pulse' : 'mu'}>{pick ? <><b style={{color: pick.col}}>{pick.name}</b> · {Math.round(pick.pct * 100)}% · ~{ro(Math.round(pick.rem))} km · ~{durata(pick.luni)}</> : 'Atinge un punct pulsatoriu pentru focalizare.'}</p>
       {pick && <button className="g sm" style={{marginBottom: 8}} onClick={() => onService(pick.id)}>✔ Am înlocuit-o</button>}</>}
+      {!insp && <button className="g w" style={{marginBottom: 8}} onClick={() => setLookOpen(o => !o)}>🎨 Culorile mașinii</button>}
+      {lookOpen && !insp && <LookPanel look={look} onChange={setLk} onSave={saveLook} onReset={() => setLk(null)} dirty={!!lk}/>}
       {!insp && parts.length > 0 && <button className="w" style={{marginBottom: 8}} onClick={startInsp}>▶ Începe inspecția ({parts.length} piese)</button>}
       {insp && cur && <div className="card">
         <div className="row"><b>🔍 Inspecție · {insp.i + 1} din {insp.ids.length}</b><button className="g sm" onClick={() => { setInsp(null); clear() }}>Încheie</button></div>
