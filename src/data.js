@@ -18,7 +18,13 @@ export const BODY = {
   Pickup: [[[-1.9,.35],[-1.9,.95],[-.5,.95],[-.5,1.45],[.5,1.48],[.9,1],[1.7,.95],[1.9,.75],[1.9,.4],[1.75,.35]], [[-.4,1],[-.4,1.4],[.45,1.43],[.8,1]]],
 }
 // Rotația modelului .glb pe axa Y (radiani). Fața mașinii trebuie să fie spre +X. Ajustează dacă apare întors.
-export const ROT = {Sedan: 0, SUV: 0, Hatchback: 0, Break: 0, Coupe: 0, Pickup: 0}
+// Pozitionare modele .glb: rot = rotatie pe Y (fata masinii trebuie sa ajunga spre +X), wheels = pozitia rotilor in scena (f = fata, r = spate, y = inaltime butuc, z = jumatate din ecartament)
+export const MODEL_CFG = {
+  SUV: {rot: Math.PI / 2, wheels: {f: 1.1, r: -1.1, y: .31, z: .9}},
+  Hatchback: {rot: Math.PI / 2, wheels: {f: 1.0, r: -1.15, y: .32, z: .86}},
+  Sedan: {rot: Math.PI / 2, wheels: {f: 1.04, r: -.97, y: .3, z: .83}},
+}
+export const ROT = Object.fromEntries(Object.entries(MODEL_CFG).map(([k, v]) => [k, v.rot]))
 // Poziții puncte pulsatorii [x,y,z], pentru modelul de bază. Suprascrie per caroserie după ce pui modelele .glb.
 export const HOT = {ulei: [1.5,.6,0], frana: [1.3,.3,.9], amortizor: [-1.3,.3,-.9], anvelope: [-1.3,.2,.9], baterie12: [1.2,.7,-.5], distributie: [1.6,.5,.3], filtre: [1.2,.8,.4], habitaclu: [0,.9,.3], bateriaHV: [0,.1,0], racire: [.8,.2,-.6], caroserie: [0,1,.8], gpl: [-1.4,.5,0], transmisie: [0,.4,0], evacuare: [-1.6,.25,0], clima: [1.3,.7,-.3], lumini: [1.8,.6,.5], directie: [1.2,.35,-.9]}
 export const HOT_OVERRIDE = {} // ex: {SUV: {bateriaHV: [0,.2,0]}}
@@ -33,15 +39,18 @@ export const ZONE = {ulei: 'motor', distributie: 'motor', filtre: 'motor', racir
 export const ZONES = {motor: ['Motor', '#fb923c'], frane: ['Frânare', '#f472b6'], susp: ['Suspensie', '#22d3ee'], roti: ['Roți', '#a3e635'], elec: ['Electric', '#a78bfa'], cabina: ['Habitaclu', '#60a5fa'], trans: ['Transmisie', '#facc15'], evac: ['Evacuare', '#94a3b8'], caros: ['Caroserie', '#e5e7eb']}
 const KEYNAME = {ulei: 'Motor', distributie: 'Distribuție', filtre: 'Filtre', racire: 'Răcire', baterie12: 'Baterie 12V', bateriaHV: 'Baterie tracțiune', habitaclu: 'Habitaclu', clima: 'Climatizare', transmisie: 'Transmisie', evacuare: 'Evacuare', gpl: 'Instalație GPL', lumini: 'Iluminat', caroserie: 'Caroserie'}
 const WHEELK = ['frana', 'anvelope', 'amortizor', 'directie']
-const WHEELS = [['față stânga', 1.15, .95, 'F'], ['față dreapta', 1.15, -.95, 'F'], ['spate stânga', -1.15, .95, 'R'], ['spate dreapta', -1.15, -.95, 'R']]
+const wheelsOf = body => {
+  const w = (MODEL_CFG[body] || {}).wheels || {f: 1.15, r: -1.15, y: .5, z: .95}
+  return [['față stânga', w.f, w.z, 'F', w.y], ['față dreapta', w.f, -w.z, 'F', w.y], ['spate stânga', w.r, w.z, 'R', w.y], ['spate dreapta', w.r, -w.z, 'R', w.y]]
+}
 const axle = p => { const n = norm(p.name); return /fata/.test(n) ? 'F' : /spate/.test(n) ? 'R' : p.hot === 'directie' ? 'F' : 'A' }
 const worstOf = list => list.reduce((a, b) => b.pct < a.pct ? b : a)
 // Un punct pe fiecare roata (cu meniu de piese) + un punct pe zona pentru restul pieselor. `parts` au deja pct si col (din wear).
 export function sitesOf(parts, body) {
   const out = [], wp = parts.filter(p => WHEELK.includes(p.hot))
-  WHEELS.forEach(([n, x, z, ax], i) => {
+  wheelsOf(body).forEach(([n, x, z, ax, y], i) => {
     const L = wp.filter(p => axle(p) === 'A' || axle(p) === ax)
-    if (L.length) out.push({id: 'w' + i, name: 'Roată ' + n, pos: [x, .5, z], parts: L, col: worstOf(L).col, zoneColor: ZONES.roti[1], zoneName: ZONES.roti[0]})
+    if (L.length) out.push({id: 'w' + i, name: 'Roată ' + n, pos: [x, y, z], parts: L, col: worstOf(L).col, zoneColor: ZONES.roti[1], zoneName: ZONES.roti[0]})
   })
   const groups = {}
   parts.filter(p => !WHEELK.includes(p.hot)).forEach(p => { (groups[p.hot] = groups[p.hot] || []).push(p) })
