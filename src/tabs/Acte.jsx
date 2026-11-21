@@ -23,6 +23,7 @@ export default function Acte({D, car, reload, onEdit}) {
   const docs = D.docs.filter(d => d.vehicle_id === car.id).sort((a, b) => a.expires_on.localeCompare(b.expires_on))
   const logs = D.logs.filter(l => l.vehicle_id === car.id).sort((a, b) => a.date.localeCompare(b.date))
   const cost = logs.reduce((s, l) => s + Number(l.part_cost) + Number(l.labor_cost), 0)
+  const ev = car.powertrain === 'Electric'
   const photoUrl = useUrl(car.image_url), [pdf, setPdf] = useState(null)
   useEffect(() => {
     if (!rep) { setPdf(null); return }
@@ -40,11 +41,11 @@ export default function Acte({D, car, reload, onEdit}) {
     const file = e.target.files[0]; e.target.value = ''; if (!file) return
     try {
       const rows = mapFuel(parseCsv(await file.text()), car)
-      if (!rows.length) throw new Error('nu am găsit alimentări valide (verifică antetul: data, km, cantitate…)')
-      if (!confirm(`Import ${rows.length} alimentări în ${car.brand} ${car.model || ''}?`)) return
+      if (!rows.length) throw new Error(`nu am găsit ${ev ? 'încărcări' : 'alimentări'} valide (verifică antetul: data, km, cantitate…)`)
+      if (!confirm(`Import ${rows.length} ${ev ? 'încărcări' : 'alimentări'} în ${car.brand} ${car.model || ''}?`)) return
       for (let i = 0; i < rows.length; i += 200) { const {error} = await sb.from('fuel_logs').insert(rows.slice(i, i + 200).map(r => ({...r, vehicle_id: car.id}))); if (error) throw error }
       const mx = Math.max(car.odometer, ...rows.map(r => r.odometer || 0)); if (mx > car.odometer) await sb.from('vehicles').update({odometer: mx}).eq('id', car.id)
-      setMsg(`Importate ${rows.length} alimentări.`); reload(car.id)
+      setMsg(`Importate ${rows.length} ${ev ? 'încărcări' : 'alimentări'}.`); reload(car.id)
     } catch (x) { setMsg('Import eșuat: ' + x.message) }
   }
   const backup = () => {
@@ -75,8 +76,8 @@ export default function Acte({D, car, reload, onEdit}) {
         <div className="row" style={{marginTop: 6}}><button className="g sm" onClick={() => onEdit({kind: 'doc', row: d})}>✎ Editează</button><button className="g sm" onClick={() => del(d.id)}>Șterge</button></div></div> })}
     <div className="grid" style={{margin: '10px 0'}}><button className="g" onClick={() => ics(docs, car, D.parts.filter(p => p.vehicle_id === car.id))}>📅 Calendar (acte + service)</button><button onClick={() => setRep(true)}>📄 Raport vânzare</button></div>
     <button className="w g" style={{marginBottom: 10}} onClick={() => setYr(true)}>🎉 Anul tău în cifre</button>
-    <div className="card"><b>📊 Excel (CSV)</b><p className="mu" style={{margin: '6px 0'}}>Exportă istoricul mașinii sau importă alimentări din alte aplicații (Fuelio, Drivvo, Simply Auto) ori din Excel. Importul recunoaște coloane precum data, km, cantitate, preț, total.</p>
-      <div className="grid"><button className="g" onClick={() => exportCsv(D, car)}>Exportă CSV</button><button className="g" onClick={() => document.getElementById('cf').click()}>Importă alimentări</button></div>
+    <div className="card"><b>📊 Excel (CSV)</b><p className="mu" style={{margin: '6px 0'}}>Exportă istoricul mașinii sau importă {ev ? 'încărcări' : 'alimentări'} din alte aplicații (Fuelio, Drivvo, Simply Auto) ori din Excel. Importul recunoaște coloane precum data, km, cantitate, preț, total.</p>
+      <div className="grid"><button className="g" onClick={() => exportCsv(D, car)}>Exportă CSV</button><button className="g" onClick={() => document.getElementById('cf').click()}>Importă {ev ? 'încărcări' : 'alimentări'}</button></div>
       <button className="g sm" style={{marginTop: 8}} onClick={templateCsv}>Descarcă modelul CSV</button>
       <input id="cf" type="file" accept=".csv,text/csv,text/plain" hidden onChange={importCsv}/>{msg && <p className="mu">{msg}</p>}</div>
     <div className="card"><b>💾 Backup JSON</b>

@@ -12,6 +12,7 @@ export default function Parts({D, car, reload, onEdit}) {
   const cats = ['Toate', ...CATS.filter(c => parts.some(p => p.category === c))]
   const logs = D.logs.filter(l => l.vehicle_id === car.id).sort((a, b) => b.date.localeCompare(a.date)).slice(0, 15)
   const setStyle = async v => { await sb.from('vehicles').update({style: v}).eq('id', car.id); reload(car.id) }
+  const delAllParts = async () => { if (window.confirm('Ștergi toate piesele urmărite de la această mașină? Istoricul de service rămâne.')) { await sb.from('vehicle_parts').delete().eq('vehicle_id', car.id); reload(car.id) } }
   const delLog = async id => { if (confirm('Ștergi înregistrarea?')) { await sb.from('maintenance_logs').delete().eq('id', id); reload(car.id) } }
   return <>
     
@@ -19,6 +20,8 @@ export default function Parts({D, car, reload, onEdit}) {
       <input type="range" min="0" max="2" value={car.style ?? 1} onChange={e => setStyle(+e.target.value)}/>
       <small className="mu">Estimarea ține cont de km, de vârsta piesei și de ~{ro(car.monthly_km)} km/lună. Estimările sunt orientative și pot conține greșeli; verifică în cartea de service.</small></div>
     <button className="g w" style={{margin: '4px 0 8px'}} onClick={() => setShow(true)}>＋ Adaugă piese din catalog</button>
+    {parts.length === 0 && <div className="card" style={{textAlign: 'center'}}><div style={{fontSize: 44}}>🧰</div><b>Nu ai nicio piesă urmărită</b><p className="mu" style={{margin: '6px 0 0'}}>Alege din catalog piesele pe care vrei să le urmărești. Pornești de la zero, cum vrei tu.</p></div>}
+    {parts.length > 0 && <button className="g sm" style={{margin: '0 0 8px'}} onClick={delAllParts}>🗑 Șterge toate piesele</button>}
     <div className="chips">{cats.map(c => <button key={c} className={c === cat ? 'on' : 'g'} onClick={() => setCat(c)}>{c}</button>)}</div>
     <AnimatePresence mode="popLayout">{parts.filter(p => cat === 'Toate' || p.category === cat).map((p, i) =>
       <motion.div layout key={p.id} className="card" initial={{opacity: 0, y: 18}} animate={{opacity: 1, y: 0}} exit={{opacity: 0}} transition={{delay: i * .05, type: 'spring', stiffness: 260, damping: 26}} whileTap={{scale: .98}}>

@@ -48,7 +48,7 @@ export default function Consum({D, car, reload, onEdit}) {
     {units.map(u => { const s = stats(fuel, logs, u); return <div key={u} className="grid" style={{marginBottom: 10}}>
       <div className="card"><div className="big">{s ? ro(s.per100) : '—'}</div><small className="mu">{u}/100 km</small></div>
       <div className="card"><div className="big">{s ? (tot ? s.totKm : s.fuelKm).toFixed(2).replace('.', ',') : '—'}</div><small className="mu">RON/km</small></div></div> })}
-    <div className="chips"><button className={tot ? 'g' : 'on'} onClick={() => setTot(false)}>Doar combustibil</button><button className={tot ? 'on' : 'g'} onClick={() => setTot(true)}>Total (cu service)</button></div>
+    <div className="chips"><button className={tot ? 'g' : 'on'} onClick={() => setTot(false)}>{ev ? 'Doar încărcare' : 'Doar combustibil'}</button><button className={tot ? 'on' : 'g'} onClick={() => setTot(true)}>Total (cu service)</button></div>
     <small className="mu">Calculul folosește înregistrările cu plin/încărcare completă (minim două).</small>
     <div className="card"><div className="row"><b>📊 Cheltuieli pe luni</b><small className="mu">ultimele 6 luni</small></div>
       {bmax <= 1 ? <p className="mu" style={{margin: '8px 0 0'}}>Încă nu ai cheltuieli în ultimele 6 luni.</p> : <>
