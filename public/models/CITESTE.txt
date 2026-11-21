@@ -1,5 +1,0 @@
-Modele 3D in format .glb, cu EXACT aceste nume (litere mici, Vercel face diferenta intre mari si mici):
-sedan.glb  suv.glb  hatchback.glb  break.glb  coupe.glb  pickup.glb
-Acum exista: sedan.glb, suv.glb, hatchback.glb. Pentru break, coupe si pickup se foloseste modelul desenat din cod.
-Orientarea, rotatia si pozitia rotilor pentru fiecare model se ajusteaza in src/data.js, la MODEL_CFG.
-Verifica licenta modelelor inainte de lansare publica.
