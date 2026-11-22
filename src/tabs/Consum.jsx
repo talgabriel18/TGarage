@@ -1,4 +1,4 @@
-import {lazy, Suspense, useState} from 'react'
+import {useState} from 'react'
 import {motion} from 'framer-motion'
 import {supabase as sb} from '../lib/supabase'
 import {openFile} from '../lib/media'
@@ -6,8 +6,7 @@ import {ro, ron, dt, durata} from '../lib/util'
 import {priceKeys, fuelKey, BRANDS, EVP} from '../data'
 import {Num} from '../components/YearReview'
 import TripCalc from '../components/TripCalc'
-import Safe from '../components/Safe'
-const NearbyMap = lazy(() => import('../components/NearbyMap'))
+import FindNear from '../components/FindNear'
 const MN = ['ian', 'feb', 'mar', 'apr', 'mai', 'iun', 'iul', 'aug', 'sep', 'oct', 'noi', 'dec']
 const kfmt = v => v >= 1000 ? (v / 1000).toFixed(1).replace('.', ',') + 'k' : String(Math.round(v))
 
@@ -75,8 +74,8 @@ export default function Consum({D, car, reload, onEdit}) {
       <div className="chips" style={{flexWrap: 'wrap'}}>{EVP.slice(0, 3).map(([n, p]) => <button key={n} className={D.prices.kWh === p ? 'sm' : 'g sm'} onClick={() => save('kWh', p)}>{n.replace(' (medie)', '')} · {p.toFixed(2)}</button>)}</div>
       <details style={{marginTop: 6}}><summary className="mu" style={{fontSize: 13}}>Tarife pe operatori (orientative)</summary>
         {EVP.slice(3).map(([n, p]) => <div key={n} className="row" style={{padding: '6px 0'}} onClick={() => save('kWh', p)}><small>{n}</small><small className="mu">{p.toFixed(2)}</small></div>)}
-        <small className="mu" style={{display: 'block', marginTop: 4}}>Tarifele se schimbă des; verifică în aplicația operatorului.</small></details></div> : <div className="card"><b>⛽ Cea mai apropiată benzinărie</b><div className="chips" style={{flexWrap: 'wrap'}}>{BRANDS.map(b => <a key={b} className="btn g" href={map(`${b} benzinărie`)} target="_blank" rel="noreferrer">{b}</a>)}</div></div>}
-    <Safe><Suspense fallback={null}><NearbyMap kind={ev ? 'charging_station' : 'fuel'}/></Suspense></Safe>
+        <small className="mu" style={{display: 'block', marginTop: 4}}>Tarifele se schimbă des; verifică în aplicația operatorului.</small></details></div> : null}
+    <FindNear ev={ev}/>
     <TripCalc per100={stats(fuel, logs, units[0])?.per100} unit={units[0]} price={D.prices[fuelKey(car.powertrain)] ?? 0}/>
     <h2 style={{marginTop: 18}}>{ev ? 'Încărcări' : 'Alimentări'}</h2>
     {fuel.length === 0 && <p className="mu">Nicio înregistrare. Apasă „+ Adaugă”.</p>}

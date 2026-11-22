@@ -4,7 +4,6 @@ const Car3D = lazy(() => import('../components/Car3D'))
 import CarForm from '../components/CarForm'
 import {useUrl} from '../lib/media'
 import {wear, ro, durata, daysTo, dt, lunaAn} from '../lib/util'
-import {createPortal} from 'react-dom'
 import {Num} from '../components/YearReview'
 import {supabase as sb} from '../lib/supabase'
 import {hotFor} from '../catalog'
@@ -59,6 +58,7 @@ export default function Garage({D, car, setCar, reload, stage, onService}) {
       {!insp && <><p key={pick ? pick.name : 'none'} className={pick ? 'mu pulse' : 'mu'}>{pick ? <><b style={{color: pick.col}}>{pick.name}</b> · {Math.round(pick.pct * 100)}% · ~{ro(Math.round(pick.rem))} km · ~{durata(pick.luni)}</> : 'Atinge un punct pulsatoriu pentru focalizare.'}</p>
       {pick && <button className="g sm" style={{marginBottom: 8}} onClick={() => onService(pick.id)}>✔ Am înlocuit-o</button>}</>}
       {!insp && <div className="grid" style={{marginBottom: 8}}><button className="g" onClick={() => setLookOpen(o => !o)}>🎨 Culorile mașinii</button><button className="g" onClick={() => setXrOpen(o => !o)}>🫥 Transparență{xr > 0 ? ` · ${xr}%` : ''}</button></div>}
+      {xrOpen && !insp && <div className="card" style={{padding: '8px 14px', marginTop: 0, marginBottom: 8}}><div className="row"><small className="mu">Transparență caroserie</small><small>{xr}%</small></div><input type="range" min="0" max="100" value={xr} onChange={e => setXr(+e.target.value)} style={{margin: '2px 0'}}/></div>}
       {lookOpen && !insp && <LookPanel look={look} onChange={setLk} onSave={saveLook} onReset={() => setLk(null)} dirty={!!lk}/>}
       {!insp && parts.length > 0 && <button className="w" style={{marginBottom: 8}} onClick={startInsp}>▶ Începe inspecția ({parts.length} piese)</button>}
       {insp && cur && <div className="card">
@@ -72,8 +72,7 @@ export default function Garage({D, car, setCar, reload, stage, onService}) {
         <div className="grid" style={{marginTop: 8, gridTemplateColumns: '1fr 1fr 1fr'}}><div><div className="big">{cnt('ok')}</div><small className="mu">în regulă</small></div><div><div className="big">{cnt('replaced')}</div><small className="mu">înlocuite</small></div><div><div className="big">{cnt('skip')}</div><small className="mu">sărite</small></div></div>
         <small className="mu" style={{display: 'block', marginTop: 8}}>„OK” doar notează că ai verificat piesa. Estimările nu se schimbă decât dacă o înlocuiești.</small>
         <div className="grid" style={{marginTop: 10}}><button className="g" onClick={startInsp}>Reia</button><button onClick={() => { setInsp(null); clear() }}>Închide</button></div></div>}
-      {xrOpen && createPortal(<div className="pop"><div className="row"><b>Transparență caroserie</b><span style={{display: 'flex', gap: 8, alignItems: 'center'}}><small className="mu">{xr}%</small><button className="g sm" onClick={() => setXrOpen(false)}>Gata</button></span></div>
-        <input type="range" min="0" max="100" value={xr} onChange={e => setXr(+e.target.value)}/><small className="mu">Trage spre dreapta ca să vezi prin caroserie piesele din interior.</small></div>, document.body)}
+      
       <div className="card" style={{padding: 12}}>
         <div className="row"><small className="mu">Culori puncte</small><span style={{display: 'flex', gap: 6}}>{[['zona', 'Zone'], ['stare', 'Stare']].map(([k, l]) => <button key={k} className={cm === k ? 'sm' : 'g sm'} onClick={() => setCM(k)}>{l}</button>)}</span></div>
         <div style={{display: 'flex', flexWrap: 'wrap', gap: '6px 12px', marginTop: 8}}>{(cm === 'zona' ? [...new Map(sites.map(s => [s.zoneName, s.zoneColor])).entries()] : [['Bună', '#10b981'], ['Atenție', '#f59e0b'], ['Urgent', '#ef4444']]).map(([n, c]) => <small key={n} className="mu"><b style={{color: c}}>●</b> {n}</small>)}</div>
