@@ -77,7 +77,7 @@ export default function App() {
   const car = D.cars.find(c => c.id === carId) || D.cars[0]
   const parts = car ? D.parts.filter(p => p.vehicle_id === car.id) : []
   const go = k => { setDir(k >= tab ? 1 : -1); setTab(k) }
-  const swStart = e => { const p = e.touches[0]; touch.current = e.target.closest('canvas,input,select,textarea,.chips,.sheet,button,a,.leaflet-container') ? null : {x: p.clientX, y: p.clientY, lock: null} }
+  const swStart = e => { const p = e.touches[0]; touch.current = e.target.closest('canvas,input,select,textarea,.chips,.sheet,button,a') ? null : {x: p.clientX, y: p.clientY, lock: null} }
   const swMove = e => {
     const o = touch.current; if (!o) return
     const p = e.touches[0], dx = p.clientX - o.x, dy = p.clientY - o.y
