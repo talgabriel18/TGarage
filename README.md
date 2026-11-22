@@ -29,8 +29,8 @@ Modul se schimba din Cont > Confidentialitate si date.
 ## Culori
 Culoarea caroseriei, finisajul, geamurile, farurile, stopurile, jantele si elementele negre se aleg din Garaj > Culorile masinii si se salveaza in coloana `vehicles.color` ca text.
 
-## Harta
-Harta din tab-ul Consum foloseste Leaflet cu tile-uri OpenStreetMap si Overpass API (benzinarii/statii din jur de 3 km). Pentru trafic mare, foloseste un furnizor de tile-uri cu plata (politica OSM limiteaza folosirea intensa).
+## Benzinarii si statii de incarcare
+Butoanele din tab-ul Consum deschid aplicatia de harti a telefonului (Apple Maps sau Google Maps) cu cautarea facuta in jurul tau. Nu exista harta incorporata si nu se cere locatia aplicatiei.
 
 ## Redenumire
 Numele e in `src/brand.js`, plus `<title>` si `apple-mobile-web-app-title` din `index.html` si `name` din `public/manifest.webmanifest`.
