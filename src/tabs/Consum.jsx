@@ -71,10 +71,11 @@ export default function Consum({D, car, reload, onEdit}) {
     <div className="card"><b>Prețuri la Zi (RON)</b>
       {priceKeys(car.powertrain).map(k => <div key={k} className="row"><span>{k}<br/><small className="mu">{D.pdates[k] ? (old(k) ? '⚠ vechi: ' : 'actualizat ') + dt(D.pdates[k]) : 'valoare implicită'}</small></span>
         <input style={{width: 100}} type="number" step="0.01" defaultValue={D.prices[k]} key={D.prices[k]} onBlur={e => save(k, e.target.value)}/></div>)}</div>
-    {ev ? <div className="card"><b>⚡ Tarife încărcare (orientative)</b><br/><small className="mu">Apasă un rând ca să-l setezi ca preț kWh.</small>
-      {EVP.map(([n, p]) => <div key={n} className="row" style={{padding: '8px 0', borderBottom: '1px solid #8882'}} onClick={() => save('kWh', p)}><span>{n}</span><span className="bd" style={{background: D.prices.kWh === p ? 'var(--ok)' : '#8886'}}>{p.toFixed(2)}</span></div>)}
-      <a className="btn g w" style={{marginTop: 10}} href={map('stație încărcare mașini electrice')} target="_blank" rel="noreferrer">📍 Cea mai apropiată stație de încărcare</a></div>
-      : <div className="card"><b>⛽ Cea mai apropiată benzinărie</b><div className="chips" style={{flexWrap: 'wrap'}}>{BRANDS.map(b => <a key={b} className="btn g" href={map(`${b} benzinărie`)} target="_blank" rel="noreferrer">{b}</a>)}</div></div>}
+    {ev ? <div className="card"><div className="row"><b>⚡ Preț kWh</b><small className="mu">apasă ca să setezi</small></div>
+      <div className="chips" style={{flexWrap: 'wrap'}}>{EVP.slice(0, 3).map(([n, p]) => <button key={n} className={D.prices.kWh === p ? 'sm' : 'g sm'} onClick={() => save('kWh', p)}>{n.replace(' (medie)', '')} · {p.toFixed(2)}</button>)}</div>
+      <details style={{marginTop: 6}}><summary className="mu" style={{fontSize: 13}}>Tarife pe operatori (orientative)</summary>
+        {EVP.slice(3).map(([n, p]) => <div key={n} className="row" style={{padding: '6px 0'}} onClick={() => save('kWh', p)}><small>{n}</small><small className="mu">{p.toFixed(2)}</small></div>)}
+        <small className="mu" style={{display: 'block', marginTop: 4}}>Tarifele se schimbă des; verifică în aplicația operatorului.</small></details></div> : <div className="card"><b>⛽ Cea mai apropiată benzinărie</b><div className="chips" style={{flexWrap: 'wrap'}}>{BRANDS.map(b => <a key={b} className="btn g" href={map(`${b} benzinărie`)} target="_blank" rel="noreferrer">{b}</a>)}</div></div>}
     <Safe><Suspense fallback={null}><NearbyMap kind={ev ? 'charging_station' : 'fuel'}/></Suspense></Safe>
     <TripCalc per100={stats(fuel, logs, units[0])?.per100} unit={units[0]} price={D.prices[fuelKey(car.powertrain)] ?? 0}/>
     <h2 style={{marginTop: 18}}>{ev ? 'Încărcări' : 'Alimentări'}</h2>

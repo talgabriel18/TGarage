@@ -3,7 +3,8 @@ import {motion} from 'framer-motion'
 const Car3D = lazy(() => import('../components/Car3D'))
 import CarForm from '../components/CarForm'
 import {useUrl} from '../lib/media'
-import {wear, ro, durata, daysTo, dt} from '../lib/util'
+import {wear, ro, durata, daysTo, dt, lunaAn} from '../lib/util'
+import {createPortal} from 'react-dom'
 import {Num} from '../components/YearReview'
 import {supabase as sb} from '../lib/supabase'
 import {hotFor} from '../catalog'
@@ -19,7 +20,7 @@ function Gauge({p, col}) {
 }
 
 export default function Garage({D, car, setCar, reload, stage, onService}) {
-  const [xr, setXr] = useState(0), [pick, setPick] = useState(null), [site, setSite] = useState(null), [form, setForm] = useState(null), [insp, setInsp] = useState(null), [lookOpen, setLookOpen] = useState(false), [lk, setLk] = useState(null)
+  const [xr, setXr] = useState(0), [pick, setPick] = useState(null), [site, setSite] = useState(null), [form, setForm] = useState(null), [insp, setInsp] = useState(null), [lookOpen, setLookOpen] = useState(false), [xrOpen, setXrOpen] = useState(false), [lk, setLk] = useState(null)
   const [cm, setCm] = useState(() => { try { return localStorage.getItem('tgarage.cm') || 'zona' } catch { return 'zona' } })
   const setCM = v => { setCm(v); try { localStorage.setItem('tgarage.cm', v) } catch {} }
   const parts = useMemo(() => car ? D.parts.filter(p => p.vehicle_id === car.id).map(p => { const hot = p.hot && p.hot !== 'caroserie' ? p.hot : hotFor(p.name, p.category); return {...p, hot, ...wear(p, car), pos: posFor(car.body, hot)} }) : [], [D, car])
@@ -57,21 +58,22 @@ export default function Garage({D, car, setCar, reload, stage, onService}) {
           <div className="pk">{[...site.parts].sort((a, b) => a.pct - b.pct).map(p => <button key={p.id} className={pick && pick.id === p.id ? 'sm' : 'g sm'} onClick={() => setPick(p)}><b style={{color: p.col}}>●</b> {p.name} {Math.round(p.pct * 100)}%</button>)}</div></div>}</div>
       {!insp && <><p key={pick ? pick.name : 'none'} className={pick ? 'mu pulse' : 'mu'}>{pick ? <><b style={{color: pick.col}}>{pick.name}</b> · {Math.round(pick.pct * 100)}% · ~{ro(Math.round(pick.rem))} km · ~{durata(pick.luni)}</> : 'Atinge un punct pulsatoriu pentru focalizare.'}</p>
       {pick && <button className="g sm" style={{marginBottom: 8}} onClick={() => onService(pick.id)}>✔ Am înlocuit-o</button>}</>}
-      {!insp && <button className="g w" style={{marginBottom: 8}} onClick={() => setLookOpen(o => !o)}>🎨 Culorile mașinii</button>}
+      {!insp && <div className="grid" style={{marginBottom: 8}}><button className="g" onClick={() => setLookOpen(o => !o)}>🎨 Culorile mașinii</button><button className="g" onClick={() => setXrOpen(o => !o)}>🫥 Transparență{xr > 0 ? ` · ${xr}%` : ''}</button></div>}
       {lookOpen && !insp && <LookPanel look={look} onChange={setLk} onSave={saveLook} onReset={() => setLk(null)} dirty={!!lk}/>}
       {!insp && parts.length > 0 && <button className="w" style={{marginBottom: 8}} onClick={startInsp}>▶ Începe inspecția ({parts.length} piese)</button>}
       {insp && cur && <div className="card">
         <div className="row"><b>🔍 Inspecție · {insp.i + 1} din {insp.ids.length}</b><button className="g sm" onClick={() => { setInsp(null); clear() }}>Încheie</button></div>
         <div className="bar"><i style={{width: `${insp.i / insp.ids.length * 100}%`, background: 'var(--ac)', transition: 'width .4s'}}/></div>
         <div className="row" style={{marginTop: 10}}><b style={{fontSize: 18}}>{cur.name}</b><span className="bd" style={{background: cur.col}}>{Math.round(cur.pct * 100)}%</span></div>
-        <small className="mu">{site ? site.name + ' · ' : ''}~{ro(Math.round(cur.rem))} km sau ~{durata(cur.luni)} rămase · ultima înlocuire {dt(cur.last_date)} la {ro(cur.last_odo)} km{checks[cur.id] ? ` · verificată ${dt(checks[cur.id])}` : ''}</small>
+        <small className="mu">{site ? site.name + ' · ' : ''}~{ro(Math.round(cur.rem))} km sau ~{durata(cur.luni)} rămase · schimbare la ~{ro(Math.round(cur.nextKm))} km{cur.due ? ` sau ${lunaAn(cur.due)}` : ''} · ultima înlocuire {dt(cur.last_date)} la {ro(cur.last_odo)} km{checks[cur.id] ? ` · verificată ${dt(checks[cur.id])}` : ''}</small>
         <div className="grid" style={{marginTop: 10}}><button onClick={() => step('ok')}>✔ OK, e în regulă</button><button className="g" onClick={replaced}>🔧 Am înlocuit-o</button></div>
         <div className="grid" style={{marginTop: 8}}><button className="g sm" disabled={insp.i === 0} onClick={() => step(null, -1)}>‹ Înapoi</button><button className="g sm" onClick={() => step('skip')}>Sari peste ›</button></div></div>}
       {insp && !cur && <div className="card"><b>✅ Inspecție încheiată</b>
         <div className="grid" style={{marginTop: 8, gridTemplateColumns: '1fr 1fr 1fr'}}><div><div className="big">{cnt('ok')}</div><small className="mu">în regulă</small></div><div><div className="big">{cnt('replaced')}</div><small className="mu">înlocuite</small></div><div><div className="big">{cnt('skip')}</div><small className="mu">sărite</small></div></div>
         <small className="mu" style={{display: 'block', marginTop: 8}}>„OK” doar notează că ai verificat piesa. Estimările nu se schimbă decât dacă o înlocuiești.</small>
         <div className="grid" style={{marginTop: 10}}><button className="g" onClick={startInsp}>Reia</button><button onClick={() => { setInsp(null); clear() }}>Închide</button></div></div>}
-      <div className="card"><div className="row"><span>Caroserie Transparentă</span><small>{xr}%</small></div><input type="range" min="0" max="100" value={xr} onChange={e => setXr(+e.target.value)}/></div>
+      {xrOpen && createPortal(<div className="pop"><div className="row"><b>Transparență caroserie</b><span style={{display: 'flex', gap: 8, alignItems: 'center'}}><small className="mu">{xr}%</small><button className="g sm" onClick={() => setXrOpen(false)}>Gata</button></span></div>
+        <input type="range" min="0" max="100" value={xr} onChange={e => setXr(+e.target.value)}/><small className="mu">Trage spre dreapta ca să vezi prin caroserie piesele din interior.</small></div>, document.body)}
       <div className="card" style={{padding: 12}}>
         <div className="row"><small className="mu">Culori puncte</small><span style={{display: 'flex', gap: 6}}>{[['zona', 'Zone'], ['stare', 'Stare']].map(([k, l]) => <button key={k} className={cm === k ? 'sm' : 'g sm'} onClick={() => setCM(k)}>{l}</button>)}</span></div>
         <div style={{display: 'flex', flexWrap: 'wrap', gap: '6px 12px', marginTop: 8}}>{(cm === 'zona' ? [...new Map(sites.map(s => [s.zoneName, s.zoneColor])).entries()] : [['Bună', '#10b981'], ['Atenție', '#f59e0b'], ['Urgent', '#ef4444']]).map(([n, c]) => <small key={n} className="mu"><b style={{color: c}}>●</b> {n}</small>)}</div>
