@@ -26,6 +26,9 @@ Modul se schimba din Cont > Confidentialitate si date.
 ## Modele 3D
 `public/models/CITESTE.txt`. Pozitiile punctelor si rotatia modelelor: `src/data.js` (HOT_OVERRIDE, MODEL_CFG).
 
+## Culori
+Culoarea caroseriei, finisajul, geamurile, farurile, stopurile, jantele si elementele negre se aleg din Garaj > Culorile masinii si se salveaza in coloana `vehicles.color` ca text.
+
 ## Harta
 Harta din tab-ul Consum foloseste Leaflet cu tile-uri OpenStreetMap si Overpass API (benzinarii/statii din jur de 3 km). Pentru trafic mare, foloseste un furnizor de tile-uri cu plata (politica OSM limiteaza folosirea intensa).
 
