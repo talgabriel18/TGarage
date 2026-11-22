@@ -28,8 +28,7 @@ export default function Parts({D, car, reload, onEdit}) {
         <div className="row"><b>{p.name}</b><span style={{display: 'flex', gap: 8, alignItems: 'center'}}><span className="bd" style={{background: p.col}}>{Math.round(p.pct * 100)}%</span><button className="g sm" onClick={() => onEdit({kind: 'part', row: p})}>✎</button></span></div>
         <small className="mu">{p.category} · ultima: {dt(p.last_date)} la {ro(p.last_odo)} km</small>
         <div className="bar"><motion.i initial={{width: 0}} animate={{width: `${p.pct * 100}%`}} transition={{duration: 1, ease: 'easeOut'}} style={{background: p.col}}/></div>
-        <small>Rămas: ~{ro(Math.round(p.rem))} km · ~{durata(p.luni)}</small><br/>
-        <small><b>Estimare schimbare:</b> la ~{ro(Math.round(p.nextKm))} km{p.due ? <> sau în {lunaAn(p.due)}</> : null} <span className="mu">· prima care se atinge: {p.first === 'km' ? 'kilometrii' : 'data'}</span></small><br/>
+        <small><b>Estimare schimbare:</b> la ~{ro(Math.round(p.nextKm))} km{p.due ? <> sau în {lunaAn(p.due)}</> : null}</small><br/>
         <small className="mu">Interval orientativ din catalogul aplicației: {ro(p.life_km)} km / {durata(p.life_months)}. Poate conține greșeli.</small>
         <br/><a className="mu" style={{fontSize: 13}} target="_blank" rel="noreferrer" href={`https://www.google.com/search?q=${encodeURIComponent(`${car.brand} ${car.model || ''} ${car.year || ''} ${p.name} interval înlocuire km`)}`}>🔎 Verifică pe internet</a></motion.div>)}</AnimatePresence>
     <h2 style={{marginTop: 22}}>Istoric service</h2>
