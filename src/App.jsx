@@ -69,6 +69,7 @@ export default function App() {
   const custom = th.id === 'custom' && img
   const bg = <div className="bg" style={{background: custom ? `linear-gradient(rgba(0,0,0,.5),rgba(0,0,0,.5)),url(${img}) center/cover` : t.bg}}>
     {!custom && t.blobs && t.blobs.map((c, i) => <i key={i} className="blob" style={{background: c, left: ['-10%', '45%', '15%'][i], top: ['5%', '35%', '65%'][i], animationDelay: `${i * -7}s`}}/>)}</div>
+  useEffect(() => { const el = document.documentElement; el.style.background = custom ? `linear-gradient(rgba(0,0,0,.5),rgba(0,0,0,.5)),url(${img}) center/cover` : t.bg }, [custom, img, t])
   if (!ready) return <>{bg}<Splash/></>
   if (!s) return <MotionConfig reducedMotion={th.calm ? 'always' : 'never'}>{bg}<Auth/></MotionConfig>
   if (gate === 'check') return <>{bg}<Splash/></>
