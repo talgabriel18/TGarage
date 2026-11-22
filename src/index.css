@@ -66,3 +66,4 @@ img{-webkit-user-drag:none}
 .pk{display:flex;flex-wrap:wrap;gap:6px}
 .pin{width:30px;height:30px;border-radius:50%;background:#fff;display:grid;place-items:center;box-shadow:0 2px 8px rgba(0,0,0,.4);font-size:16px}
 .swatches{display:flex;flex-wrap:wrap;gap:8px;margin:8px 0 2px}
+.pop{position:fixed;left:12px;right:12px;bottom:calc(150px + env(safe-area-inset-bottom));max-width:536px;margin:auto;background:var(--sheet);-webkit-backdrop-filter:blur(18px);backdrop-filter:blur(18px);border:1px solid var(--bd);border-radius:22px;padding:12px 14px;z-index:9;box-shadow:0 12px 40px rgba(0,0,0,.35)}
