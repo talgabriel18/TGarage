@@ -76,3 +76,21 @@ nav button{padding:6px 2px;max-width:140px}
 .pill{border-radius:18px}
 .fab{bottom:calc(84px + env(safe-area-inset-bottom))}
 .toast{bottom:calc(96px + env(safe-area-inset-bottom))}
+/* v25: ritm unitar, contrast, accesibilitate */
+html{font:-apple-system-body}
+body{font:.94rem/1.45 -apple-system,system-ui,'Segoe UI',sans-serif}
+:root{--mu:#b6bfd0}
+:focus-visible{outline:2px solid var(--ac);outline-offset:2px}
+button,.btn{min-height:44px}
+.sm,.chips button,nav button,.icon,.sw{min-height:0}
+.sm{min-height:36px}
+.card{padding:16px;margin:0 0 12px}
+.page>.card:first-child{margin-top:0}
+.grid{gap:12px}
+h2{margin:22px 0 10px;font-size:20px}
+small{font-size:13px}
+.grid3{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin:0 0 12px}
+.grid3>button{width:100%}
+.stat{padding:12px;margin:0}
+.stat .v{font-size:18px;font-weight:700;line-height:1.2;word-break:break-word}
+@media (prefers-reduced-motion:reduce){*{animation-duration:.01ms!important;animation-iteration-count:1!important;transition-duration:.01ms!important}}

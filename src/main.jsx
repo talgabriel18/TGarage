@@ -2,7 +2,9 @@ import React from 'react'
 import {createRoot} from 'react-dom/client'
 import {configOk, mode} from './lib/supabase'
 import Chooser from './tabs/Chooser'
+import {installDiag} from './lib/diag'
 import './index.css'
+installDiag()
 
 class EB extends React.Component {
   state = {e: null}
