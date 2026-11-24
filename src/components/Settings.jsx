@@ -5,7 +5,7 @@ export default function Settings({th, setTh, setImg, onClose}) {
   return <>
     <div className="bk" onClick={onClose}/>
     <motion.div className="sheet" initial={{y: '100%'}} animate={{y: 0}} transition={{type: 'spring', stiffness: 260, damping: 28}}>
-      <div className="row"><h2>Setări</h2><button className="g" onClick={onClose}>✕</button></div>
+      <div className="row"><h2>Setări</h2><button className="g" onClick={onClose} aria-label="Închide">✕</button></div>
       <b>Fundal</b>
       <div className="tiles">
         {THEMES.map(x => <motion.div key={x.id} whileTap={{scale: .94}} className={'tile' + (th.id === x.id ? ' on' : '')} style={{background: x.bg, color: x.light ? '#10131a' : '#fff'}} onClick={() => setTh({id: x.id})}>{x.n}</motion.div>)}

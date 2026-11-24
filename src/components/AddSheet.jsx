@@ -6,9 +6,9 @@ import {CATS, DEFAULT_PRICES, EXP_CATS, fuelKey} from '../data'
 import {today, durata} from '../lib/util'
 import {search, estimate, hotFor} from '../catalog'
 
-export default function AddSheet({D, car, parts, tab, edit, onClose, onSaved, onKeep, preset}) {
+export default function AddSheet({D, car, parts, tab, edit, onClose, onSaved, onKeep, preset, quick}) {
   const ev = car.powertrain === 'Electric', phev = car.powertrain === 'PHEV', row = edit?.row
-  const [kind, setKind] = useState(edit?.kind || (preset ? 'service' : tab === 2 ? 'fuel' : tab === 3 ? 'doc' : 'service'))
+  const [kind, setKind] = useState(edit?.kind || quick || (preset ? 'service' : tab === 2 ? 'fuel' : tab === 3 ? 'doc' : 'service'))
   const init = () => {
     if (!edit) return {date: today(), odo: car.odometer, part: preset || parts[0]?.id || 'new', cat: CATS[0], lk: 20000, ly: 2, lm: 0, unit: ev ? 'kWh' : 'L', full: true, type: 'ITP', pu: '', ecat: EXP_CATS[0], amt: ''}
     if (edit.kind === 'service') return {date: row.date, odo: row.odometer, pname: row.part_name, oem: row.brand_oem || '', pc: row.part_cost, lc: row.labor_cost, notes: row.notes || ''}
@@ -76,7 +76,7 @@ export default function AddSheet({D, car, parts, tab, edit, onClose, onSaved, on
   return <>
     <div className="bk" onClick={onClose}/>
     <motion.div className="sheet" initial={{y: '100%'}} animate={{y: 0}} transition={{type: 'spring', stiffness: 260, damping: 28}}>
-      <div className="row"><h2>{title}</h2><button className="g" onClick={onClose}>✕</button></div>
+      <div className="row"><h2>{title}</h2><button className="g" onClick={onClose} aria-label="Închide">✕</button></div>
       {!edit && <div className="chips">{[['service', 'Service'], ['fuel', ev ? 'Încărcare' : 'Alimentare'], ['doc', 'Act'], ['expense', 'Cheltuială']].map(([k, l]) => <button key={k} className={kind === k ? 'on' : 'g'} onClick={() => setKind(k)}>{l}</button>)}</div>}
       {(kind === 'service' || kind === 'fuel') && <div className="grid"><input type="date" {...I('date')}/><input type="number" placeholder="Km" {...I('odo')}/></div>}
       {kind === 'service' && <>

@@ -49,7 +49,7 @@ export default function CarForm({car, onClose, onSaved}) {
   return <>
     <div className="bk" onClick={onClose}/>
     <motion.div className="sheet" initial={{y: '100%'}} animate={{y: 0}} transition={{type: 'spring', stiffness: 260, damping: 28}}>
-      <div className="row"><h2>{car ? 'Editează mașina' : 'Mașină nouă'}</h2><button className="g" onClick={onClose}>✕</button></div>
+      <div className="row"><h2>{car ? 'Editează mașina' : 'Mașină nouă'}</h2><button className="g" onClick={onClose} aria-label="Închide">✕</button></div>
       <input placeholder="Marcă (începe să scrii, ex. Dac…)" value={f.brand} onChange={e => set('brand', e.target.value)}/>
       {chips(bSug, b => set('brand', b))}
       <input placeholder="Model (ex. Duster)" value={f.model || ''} onChange={e => set('model', e.target.value)}/>

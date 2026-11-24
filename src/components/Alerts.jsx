@@ -8,7 +8,7 @@ export default function Alerts({list, read, onRead, onDel, onReadAll, onDelAll, 
   return <>
     <div className="bk" onClick={onClose}/>
     <motion.div className="sheet" initial={{y: '100%'}} animate={{y: 0}} transition={{type: 'spring', stiffness: 260, damping: 28}}>
-      <div className="row"><h2>Notificări</h2><button className="g" onClick={onClose}>✕</button></div>
+      <div className="row"><h2>Notificări</h2><button className="g" onClick={onClose} aria-label="Închide">✕</button></div>
       {list.length > 0 && <div className="row" style={{margin: '2px 0 6px', flexWrap: 'wrap'}}>
         <small className="mu">{unread ? `${unread} necitite` : 'Toate sunt citite'}</small>
         <span style={{display: 'flex', gap: 6}}><button className="g sm" disabled={!unread} onClick={onReadAll}>Marchează tot citit</button><button className="g sm" onClick={onDelAll}>Șterge tot</button></span></div>}

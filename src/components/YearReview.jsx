@@ -42,7 +42,7 @@ export default function YearReview({D, car, onClose}) {
   return <>
     <div className="bk" onClick={onClose}/>
     <motion.div className="sheet" initial={{y: '100%'}} animate={{y: 0}} transition={{type: 'spring', stiffness: 260, damping: 28}} style={{maxHeight: '92%'}}>
-      <div className="row"><h2>🎉 {y} în cifre</h2><button className="g" onClick={onClose}>✕</button></div>
+      <div className="row"><h2>🎉 {y} în cifre</h2><button className="g" onClick={onClose} aria-label="Închide">✕</button></div>
       <small className="mu">{car.brand} {car.model}</small>
       {years.length > 1 && <div className="chips">{years.map(x => <button key={x} className={x === y ? 'on' : 'g'} onClick={() => setY(x)}>{x}</button>)}</div>}
       {cards.length === 0 ? <p className="mu">Nu ai înregistrări în {y}.</p> : <div className="grid" style={{marginTop: 10}}>
