@@ -1,6 +1,9 @@
 import {useEffect, useState} from 'react'
 import {motion, AnimatePresence} from 'framer-motion'
 import {supabase as sb, mode, switchMode} from '../lib/supabase'
+import LegalSheet from '../components/LegalSheet'
+import {mailto} from '../lib/diag'
+import {APP} from '../brand'
 import {upload, useUrl} from '../lib/media'
 
 const EMOJI = ['🚗', '🏎️', '🚙', '🛻', '⚡', '🔧', '🏁', '🛞', '🚘', '🦊', '🐺', '🌟']
@@ -51,7 +54,7 @@ export default function Cont({user, onTheme}) {
   const md = user.user_metadata || {}
   const [f, setF] = useState({name: md.name || '', full_name: md.full_name || '', phone: md.phone || '', city: md.city || ''})
   const [msg, setMsg] = useState({}), say = (k, m) => setMsg(x => ({...x, [k]: m}))
-  const [mail, setMail] = useState(''), [p1, setP1] = useState(''), [p2, setP2] = useState(''), [page, setPage] = useState(null)
+  const [mail, setMail] = useState(''), [p1, setP1] = useState(''), [p2, setP2] = useState(''), [page, setPage] = useState(null), [legal, setLegal] = useState(false)
   const photo = useUrl(md.avatar_photo)
   const upd = async (data, k) => { const {error} = await sb.auth.updateUser({data}); say(k, error ? error.message : 'Salvat ✓') }
   const upPhoto = async e => {
@@ -97,6 +100,8 @@ export default function Cont({user, onTheme}) {
         {!local && <Row i="🔐" t="Securitate" s="Email, parolă, verificare în doi pași" onClick={() => setPage('sec')}/>}
         <Row i="🛡️" t="Confidențialitate și date" s={local ? 'Gratuit · pe dispozitiv' : 'Pro · cont și cloud'} onClick={() => setPage('priv')}/>
         <Row i="🎨" t="Aspect și teme" s="Fundal, culoare, scena 3D" onClick={onTheme}/>
+        <Row i="📄" t="Informații legale" s="Termeni, confidențialitate, ștergerea datelor" onClick={() => setLegal(true)}/>
+        <Row i="💬" t="Feedback și probleme" s="Trimite un email cu detaliile tehnice" onClick={() => { window.location.href = mailto(`Feedback ${APP}`, 'Scrie aici mesajul tău:') }}/>
         {!local && <Row i="🚪" t="Deconectare" onClick={() => sb.auth.signOut()}/>}
       </div></>}
     <AnimatePresence mode="wait">{page && <motion.div key={page} initial={{opacity: 0, x: 40}} animate={{opacity: 1, x: 0}} exit={{opacity: 0, x: -40}} transition={{duration: .2}}>
@@ -132,5 +137,6 @@ export default function Cont({user, onTheme}) {
           <p className="mu" style={{margin: '6px 0 0'}}>Butonul „Din VIN” trimite seria de șasiu către un serviciu public (NHTSA), doar când îl apeși. Butoanele din Consum pentru benzinării și stații de încărcare deschid aplicația de hărți aleasă (Apple sau Google), care folosește locația ta. {local ? 'În afară de acestea, nimic nu pleacă de pe telefon.' : 'În afară de acestea, aplicația trimite doar datele tale către contul tău din cloud.'}</p></div>
         <div className="card"><b>🗑️ Șterge datele</b><p className="mu" style={{margin: '6px 0'}}>Șterge toate mașinile, istoricul și pozele {local ? 'de pe acest telefon' : 'din contul tău'}. Acțiunea nu se poate anula.</p><button className="g w" onClick={wipe}>Șterge toate datele mele</button>{msg.x && <p className="mu" style={{margin: '6px 0 0'}}>{msg.x}</p>}</div></>}
     </motion.div>}</AnimatePresence>
+  {legal && <LegalSheet email={user.email} onClose={() => setLegal(false)}/>}
   </>
 }

@@ -4,6 +4,7 @@ import {supabase as sb} from '../lib/supabase'
 import {openFile} from '../lib/media'
 import {wear, ro, ron, dt, durata, lunaAn, STIL_N} from '../lib/util'
 import {CATS} from '../data'
+import {officialFor} from '../intervals'
 import CatalogSheet from '../components/CatalogSheet'
 
 export default function Parts({D, car, reload, onEdit}) {
@@ -29,7 +30,7 @@ export default function Parts({D, car, reload, onEdit}) {
         <small className="mu">{p.category} · ultima: {dt(p.last_date)} la {ro(p.last_odo)} km</small>
         <div className="bar"><motion.i initial={{width: 0}} animate={{width: `${p.pct * 100}%`}} transition={{duration: 1, ease: 'easeOut'}} style={{background: p.col}}/></div>
         <small><b>Estimare schimbare:</b> la ~{ro(Math.round(p.nextKm))} km{p.due ? <> sau în {lunaAn(p.due)}</> : null}</small><br/>
-        <small className="mu">Interval orientativ din catalogul aplicației: {ro(p.life_km)} km / {durata(p.life_months)}. Poate conține greșeli.</small>
+        {officialFor(car, p.name) ? <small>✔ Interval oficial: {ro(officialFor(car, p.name).km)} km / {durata(officialFor(car, p.name).luni)}{officialFor(car, p.name).sursa ? ` · ${officialFor(car, p.name).sursa}` : ''}</small> : <small className="mu">Interval orientativ din catalogul aplicației: {ro(p.life_km)} km / {durata(p.life_months)}. Poate conține greșeli.</small>}
         <br/><a className="mu" style={{fontSize: 13}} target="_blank" rel="noreferrer" href={`https://www.google.com/search?q=${encodeURIComponent(`${car.brand} ${car.model || ''} ${car.year || ''} ${p.name} interval înlocuire km`)}`}>🔎 Verifică pe internet</a></motion.div>)}</AnimatePresence>
     <h2 style={{marginTop: 22}}>Istoric service</h2>
     {logs.length === 0 && <p className="mu">Nicio înregistrare încă. Apasă „+ Adaugă”.</p>}
