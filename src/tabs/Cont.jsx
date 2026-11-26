@@ -16,7 +16,7 @@ function Mfa() {
     setMsg(''); setBusy(true)
     const {data: all} = await sb.auth.mfa.listFactors()
     for (const x of all?.all || []) if (x.status === 'unverified') await sb.auth.mfa.unenroll({factorId: x.id})
-    const {data, error} = await sb.auth.mfa.enroll({factorType: 'totp', friendlyName: 'TGarage ' + Date.now()})
+    const {data, error} = await sb.auth.mfa.enroll({factorType: 'totp', friendlyName: 'PitVault ' + Date.now()})
     setBusy(false)
     if (error) return setMsg(error.message)
     setEn(data)
@@ -134,7 +134,7 @@ export default function Cont({user, onTheme}) {
           <div className="plan"><div className="row"><b>Pro · cont și cloud</b>{!local && <span className="bd" style={{background: 'var(--ok)'}}>Activ</span>}</div><small className="mu">Cont cu email și parolă. Copie în cloud, sincronizare între dispozitive și recuperare dacă îți pierzi telefonul.</small></div>
           <button className="g w" style={{marginTop: 10}} onClick={swap}>{local ? 'Treci la Pro (cont + cloud)' : 'Treci la modul gratuit (local)'}</button></div>
         <div className="card"><b>🌐 Servicii externe</b>
-          <p className="mu" style={{margin: '6px 0 0'}}>Butonul „Din VIN” trimite seria de șasiu către un serviciu public (NHTSA), doar când îl apeși. Butoanele din Consum pentru benzinării și stații de încărcare deschid aplicația de hărți aleasă (Apple sau Google), care folosește locația ta. {local ? 'În afară de acestea, nimic nu pleacă de pe telefon.' : 'În afară de acestea, aplicația trimite doar datele tale către contul tău din cloud.'}</p></div>
+          <p className="mu" style={{margin: '6px 0 0'}}>Butonul „Din VIN” trimite seria de șasiu către un serviciu public (NHTSA), doar când îl apeși. Butoanele din Consum pentru benzinării și stații de încărcare deschid aplicația de hărți aleasă (Apple sau Google), care folosește locația ta. Fila Știri cere titlurile de la serverul aplicației. {local ? 'În afară de acestea, nimic nu pleacă de pe telefon.' : 'În afară de acestea, aplicația trimite doar datele tale către contul tău din cloud.'}</p></div>
         <div className="card"><b>🗑️ Șterge datele</b><p className="mu" style={{margin: '6px 0'}}>Șterge toate mașinile, istoricul și pozele {local ? 'de pe acest telefon' : 'din contul tău'}. Acțiunea nu se poate anula.</p><button className="g w" onClick={wipe}>Șterge toate datele mele</button>{msg.x && <p className="mu" style={{margin: '6px 0 0'}}>{msg.x}</p>}</div></>}
     </motion.div>}</AnimatePresence>
   {legal && <LegalSheet email={user.email} onClose={() => setLegal(false)}/>}

@@ -48,12 +48,12 @@ export default function Garage({D, car, setCar, reload, stage, onService, onQuic
   const urgent = [...parts].sort((a, b) => a.pct - b.pct).filter(p => p.pct < .25).slice(0, 3)
   const soon = D.docs.filter(d => d.vehicle_id === car?.id && daysTo(d.expires_on) <= 30)
   const rd = parts.length === 0 ? ['Adaugă piese în tab-ul Piese', '🔧'] : urgent.some(p => p.pct < .1) ? ['Necesită service', '🚨'] : avg > .6 && urgent.length === 0 ? ['Gata de drum', '✅'] : ['Verifică piesele', '⚠️']
-  const cost = (() => {
-    if (!car) return null
-    const f = D.fuel.filter(x => x.vehicle_id === car.id), l = D.logs.filter(x => x.vehicle_id === car.id), e = (D.exp || []).filter(x => x.vehicle_id === car.id)
-    const t = f.reduce((s, x) => s + Number(x.total_cost), 0) + l.reduce((s, x) => s + Number(x.part_cost) + Number(x.labor_cost), 0) + e.reduce((s, x) => s + Number(x.amount), 0)
-    const ds = [...f, ...l, ...e].map(x => x.date).sort()
-    return ds.length ? t / Math.max(1, (Date.now() - new Date(ds[0])) / 2.63e9) : null
+  const spent12 = (() => {
+    if (!car) return 0
+    const lim = Date.now() - 365 * 864e5, inn = x => new Date(x.date).getTime() >= lim
+    return D.fuel.filter(x => x.vehicle_id === car.id && inn(x)).reduce((t, x) => t + Number(x.total_cost), 0)
+      + D.logs.filter(x => x.vehicle_id === car.id && inn(x)).reduce((t, x) => t + Number(x.part_cost) + Number(x.labor_cost), 0)
+      + (D.exp || []).filter(x => x.vehicle_id === car.id && inn(x)).reduce((t, x) => t + Number(x.amount), 0)
   })()
   const nextDue = (() => {
     const c = []
@@ -86,7 +86,7 @@ export default function Garage({D, car, setCar, reload, stage, onService, onQuic
         <div className="grid3" style={{marginTop: 4}}>
           <div className="card stat"><div className="v">{parts.length}</div><small className="mu">piese urmărite</small></div>
           <div className="card stat"><div className="v" style={{fontSize: 15}}>{nextDue ? nextDue.n : '—'}</div><small className="mu">{nextDue ? when(nextDue.ts) : 'nicio scadență'}</small></div>
-          <div className="card stat"><div className="v">{cost == null ? '—' : ron(cost)}</div><small className="mu">cost pe lună</small></div>
+          <div className="card stat"><div className="v">{ron(spent12)}</div><small className="mu">cheltuit în 12 luni</small></div>
         </div>
         <div className="grid3" role="group" aria-label="Acțiuni rapide">
           <button className="g" onClick={() => onQuick('fuel')}>＋ {ev ? 'Încărcare' : 'Alimentare'}</button>
