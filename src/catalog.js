@@ -16,7 +16,8 @@ Ulei cutie automată (ATF) + filtru|T|60000|48|transmisie|X
 Ulei diferențial / cutie transfer (4x4)|T|80000|60|transmisie|A
 Ulei reductor transmisie (EV)|T|100000|96|transmisie|E
 Aditiv AdBlue (sistem SCR)|X|20000|12|evacuare|D
-Curea / lanț de distribuție + pompă de apă|M|120000|72|distributie|X*
+Distribuție pe curea (+ pompă de apă)|M|75000|60|distributie|X
+Distribuție pe lanț|M|200000|120|distributie|X
 Curea de accesorii (poly-V) + rolă întinzătoare|M|90000|60|distributie|X
 Bujii|M|60000|48|ulei|B*
 Bujii incandescente (diesel)|M|100000|96|ulei|D

@@ -23,7 +23,7 @@ export const MODEL_CFG = {
   // sedan.glb: fata modelului e spre -Z, deci rot = -90 grade. roles = ce material e ce parte (pentru culori). hubMeshes = rotile (capacele devin culoarea jantelor)
   Sedan: {
     rot: -Math.PI / 2,
-    wheels: {f: 1.18, r: -.84, y: .23, z: .7},
+    wheels: {f: 1.18, r: -.84, y: .23, z: .7, zc: .565},
     roles: {'Material.001': 'body', 'Material.002': 'trim', 'Material.004': 'glass', 'Material.005': 'head', 'Material.007': 'head', 'Material.006': 'tail', 'Material.003': 'rim'},
     hubMeshes: /Cube\.?00[5-8]/,
   },
@@ -85,3 +85,6 @@ export const LOOK_PARTS = [
   {k: 'rim', t: 'Jante', d: 'Culoarea jantelor.', sw: [['Argintiu', '#c9ced8'], ['Negru', '#15171c'], ['Auriu', '#d4af37'], ['Bronz', '#b08d57'], ['Alb', '#f1f1f1']]},
   {k: 'trim', t: 'Elemente negre', d: 'Barele, pragurile, grila și anvelopele.', sw: [['Negru', '#1c1d21'], ['Gri închis', '#3a3d45'], ['Argintiu', '#9aa0ab']]},
 ]
+
+// Pozițiile osiilor pentru elementele din interior (z = centrul roților, nu butucul)
+export const wheelSpec = body => { const w = (MODEL_CFG[body] || {}).wheels; return w ? {f: w.f, r: w.r, y: w.y, z: w.zc || w.z - .1} : {f: 1.15, r: -1.15, y: .38, z: .82} }
