@@ -7,6 +7,7 @@ import assert from 'node:assert/strict'
 
 const tmp = mkdtempSync(join(tmpdir(), 'tgarage-'))
 cpSync('src', join(tmp, 'src'), {recursive: true})
+cpSync('api', join(tmp, 'api'), {recursive: true})
 writeFileSync(join(tmp, 'package.json'), '{"type":"module"}')
 const walk = d => readdirSync(d).forEach(f => { const p = join(d, f); if (statSync(p).isDirectory()) walk(p); else if (p.endsWith('.js')) {
   writeFileSync(p, readFileSync(p, 'utf8').replace(/(from\s+['"])(\.{1,2}\/[^'"]+?)(['"])/g, (m, a, q, c) => /\.(js|jsx|css|json)$/.test(q) ? m : a + q + '.js' + c)) } })
@@ -61,6 +62,23 @@ await t('localdb: inserare, actualizare, upsert, cascadă', async () => {
   await sb.from('vehicles').delete().eq('id', v.data.id); assert.equal((await sb.from('vehicle_parts').select('*')).data.length, 0)
 })
 await t('legal: documente complete', () => { assert.equal(Object.keys(legal.LEGAL).length, 3); Object.values(legal.LEGAL).forEach(d => assert.ok(d.body.length >= 3 && d.body.every(b => b[0] && b[1]))) })
+
+await t('distribuție: curea și lanț separate, cu intervalele cerute', () => {
+  const b = cat.estimate('Distribuție pe curea', 'Motor & Propulsie'), l = cat.estimate('Distribuție pe lanț', 'Motor & Propulsie')
+  assert.equal(b.km, 75000); assert.equal(b.mo, 60); assert.equal(l.km, 200000); assert.equal(l.hot, 'distributie')
+  assert.ok(cat.CATALOG.some(c => c.name === 'Distribuție pe curea (+ pompă de apă)') && cat.CATALOG.some(c => c.name === 'Distribuție pe lanț'))
+})
+await t('wheelSpec: model cunoscut și implicit', () => { assert.equal(data.wheelSpec('Sedan').z, .565); assert.equal(data.wheelSpec('SUV').f, 1.15) })
+await t('știri: top 10 din ziua curentă, fără dubluri, cu starea surselor', async () => {
+  const now = Date.now(), rss = items => `<rss><channel>${items.map(([t, ms]) => `<item><title><![CDATA[${t}]]></title><link>https://ex.ro/${encodeURIComponent(t)}</link><pubDate>${new Date(ms).toUTCString()}</pubDate></item>`).join('')}</channel></rss>`
+  const A = Array.from({length: 8}, (_, i) => [`Stire A ${i} &amp; co`, now - (i + 1) * 36e5]), B = [['Stire A 0 & co', now - 5e5], ...Array.from({length: 6}, (_, i) => [`Stire B ${i}`, now - (i + 2) * 40e5]), ['Veche', now - 9 * 864e5]]
+  globalThis.fetch = async u => u.includes('autoblog') ? {ok: true, text: async () => rss(A)} : u.includes('automarket') ? {ok: true, text: async () => rss(B)} : {ok: false, status: 404}
+  const news = (await import(pathToFileURL(join(tmp, 'api', 'news.js')).href)).default
+  let out; await news({}, {setHeader() {}, status() { return {json: j => { out = j }} }})
+  assert.equal(out.items.length, 10); assert.ok(out.items.every(x => now - x.ts < 864e5)); assert.equal(new Set(out.items.map(x => x.title.toLowerCase())).size, 10)
+  assert.ok(out.items.some(x => x.title === 'Stire A 1 & co')); assert.ok(out.items.every((x, i, a) => !i || a[i - 1].ts >= x.ts))
+  assert.equal(out.sources.filter(s => s.ok).length, 2); assert.equal(out.sources.length, 4)
+})
 
 console.log(`\n${n} teste trecute, ${bad} eșuate`)
 process.exit(bad ? 1 : 0)
