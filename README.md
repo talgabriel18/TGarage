@@ -1,4 +1,4 @@
-# TGarage
+# PitVault
 Aplicatie in romana pentru intretinere auto: piese cu estimari, consum, cheltuieli, acte, raport PDF. Scena 3D, mai multe masini.
 
 ## Doua moduri (se aleg la prima deschidere)
@@ -25,6 +25,9 @@ Modul se schimba din Cont > Confidentialitate si date.
 
 ## Modele 3D
 `public/models/CITESTE.txt`. Pozitiile punctelor si rotatia modelelor: `src/data.js` (HOT_OVERRIDE, MODEL_CFG).
+
+## Stiri
+Tab-ul Stiri cheama functia `api/news.js` (Vercel, cu cache 15 min), care citeste fluxuri RSS publice. Adresele fluxurilor romanesti din fisier NU sunt verificate: aplicatia arata ce surse au raspuns. Functioneaza doar pe Vercel (nu cu `npm run dev`).
 
 ## Culori
 Culoarea caroseriei, finisajul, geamurile, farurile, stopurile, jantele si elementele negre se aleg din Garaj > Culorile masinii si se salveaza in coloana `vehicles.color` ca text.
