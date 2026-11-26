@@ -68,8 +68,8 @@ export function exportCsv(D, car) {
     ...D.logs.filter(x => x.vehicle_id === car.id).map(x => ({tip: 'Service', data: x.date, km: x.odometer, descriere: x.part_name + (x.brand_oem ? ' (' + x.brand_oem + ')' : ''), total: Number(x.part_cost) + Number(x.labor_cost)})),
     ...(D.exp || []).filter(x => x.vehicle_id === car.id).map(x => ({tip: 'Cheltuială', data: x.date, descriere: x.category + (x.note ? ' – ' + x.note : ''), total: N(x.amount)})),
   ].sort((a, b) => a.data.localeCompare(b.data))
-  save(`tgarage-${(car.brand + '-' + (car.model || '')).toLowerCase().replace(/\W+/g, '-')}.csv`, toCsv(rows))
+  save(`pitvault-${(car.brand + '-' + (car.model || '')).toLowerCase().replace(/\W+/g, '-')}.csv`, toCsv(rows))
 }
 export function templateCsv() {
-  save('tgarage-model-import.csv', toCsv([{tip: 'Alimentare', data: '2026-01-15', km: 100000, descriere: 'Petrom', cantitate: 40, unitate: 'L', pret_unitar: 9.8, total: 392, plin: 'da'}]))
+  save('pitvault-model-import.csv', toCsv([{tip: 'Alimentare', data: '2026-01-15', km: 100000, descriere: 'Petrom', cantitate: 40, unitate: 'L', pret_unitar: 9.8, total: 392, plin: 'da'}]))
 }

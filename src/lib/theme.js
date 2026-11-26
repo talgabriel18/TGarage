@@ -1,4 +1,5 @@
-import {useEffect, useState} from 'react'
+import {useEffect, useRef, useState} from 'react'
+import {supabase as sb, mode} from './supabase'
 const D = {tx: '#f2f4f8', mu: '#b6bfd0', card: 'rgba(22,27,40,.62)', bd: 'rgba(255,255,255,.08)', gbtn: 'rgba(255,255,255,.1)', inp: 'rgba(0,0,0,.28)', sheet: 'rgba(18,22,34,.95)'}
 export const THEMES = [
   {id: 'noapte', n: 'Noapte', ...D, acc: '#6ea8ff', bg: 'radial-gradient(900px 500px at 0% -10%,#22346d 0%,transparent 60%),radial-gradient(800px 500px at 100% 0%,#4a2275 0%,transparent 55%),#0a0c12'},
@@ -13,7 +14,7 @@ export const ACCENTS = ['#6ea8ff', '#a78bfa', '#ff8a3d', '#f472b6', '#2dd4bf', '
 const K = 'garaj3d.theme'
 const read = () => { try { return {id: 'noapte', acc: null, calm: (typeof matchMedia !== 'undefined' && matchMedia('(prefers-reduced-motion: reduce)').matches), ...JSON.parse(localStorage.getItem(K) || '{}')} } catch { return {id: 'noapte', acc: null, calm: false} } }
 
-export function useTheme() {
+export function useTheme(user) {
   const [th, setT] = useState(read), [img, setI] = useState(() => { try { return localStorage.getItem(K + '.img') } catch { return null } })
   const t = THEMES.find(x => x.id === th.id) || (th.id === 'custom' ? {...THEMES[0], id: 'custom', bg: THEMES[0].bg} : THEMES[0])
   useEffect(() => {
@@ -22,7 +23,14 @@ export function useTheme() {
     document.documentElement.classList.toggle('calm', !!th.calm)
     document.documentElement.style.colorScheme = t.light ? 'light' : 'dark'
   }, [th, t])
-  const setTh = p => setT(c => { const n = {...c, ...p}; try { localStorage.setItem(K, JSON.stringify(n)) } catch {} return n })
+  const tm = useRef(null)
+  const save = n => { if (mode === 'cloud' && sb) sb.auth.updateUser({data: {prefs: {id: n.id === 'custom' ? 'noapte' : n.id, acc: n.acc, calm: !!n.calm, stage: n.stage || 'studio', ts: n.ts}}}) }
+  const setTh = p => setT(c => { const n = {...c, ...p, ts: Date.now()}; try { localStorage.setItem(K, JSON.stringify(n)) } catch {} clearTimeout(tm.current); tm.current = setTimeout(() => save(n), 900); return n })
+  const rp = user && user.user_metadata && user.user_metadata.prefs
+  useEffect(() => {
+    if (!rp) return
+    setT(c => { if ((rp.ts || 0) <= (c.ts || 0)) return c; const n = {...c, ...rp, id: rp.id === 'custom' ? c.id : rp.id}; try { localStorage.setItem(K, JSON.stringify(n)) } catch {} return n })
+  }, [rp && rp.ts])
   const setImg = v => { setI(v); try { localStorage.setItem(K + '.img', v) } catch {} }
   return {th, setTh, img, setImg, t}
 }
