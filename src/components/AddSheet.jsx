@@ -4,7 +4,7 @@ import {supabase as sb} from '../lib/supabase'
 import {upload} from '../lib/media'
 import {CATS, DEFAULT_PRICES, EXP_CATS, fuelKey} from '../data'
 import {today, durata} from '../lib/util'
-import {search, estimate, hotFor} from '../catalog'
+import {search, estimate, hotFor, norm} from '../catalog'
 
 export default function AddSheet({D, car, parts, tab, edit, onClose, onSaved, onKeep, preset, quick}) {
   const ev = car.powertrain === 'Electric', phev = car.powertrain === 'PHEV', row = edit?.row
@@ -100,6 +100,8 @@ export default function AddSheet({D, car, parts, tab, edit, onClose, onSaved, on
       {kind === 'part' && <>
         <input placeholder="Nume piesă" {...I('pname')}/><select {...I('cat')}>{CATS.map(c => <option key={c}>{c}</option>)}</select>
         {life}
+        {/distribu/.test(norm(f.pname || '')) && <div style={{marginBottom: 10}}><small className="mu">Alege tipul distribuției (completează intervalul):</small>
+          <div className="chips" style={{flexWrap: 'wrap'}}>{[['Distribuție pe curea (+ pompă de apă)', 75000, 5, 'Curea: 50.000–100.000 km sau 5 ani (valori orientative).'], ['Distribuție pe lanț', 200000, 10, 'Lanț: 150.000–250.000 km (valori orientative).']].map(([n, km, y, note]) => <button key={n} className="g sm" onClick={() => setF({...f, pname: n, lk: km, ly: y, lm: 0, touched: true, note})}>{n.replace(' (+ pompă de apă)', '')}</button>)}</div></div>}
         <small className="mu">Ultima înlocuire</small><div className="grid"><input type="date" {...I('ld')}/><input type="number" placeholder="La km" {...I('lo')}/></div>
         <div className="plan" style={{marginTop: 10}}><small className="mu">ℹ️ Valorile sunt estimări orientative din catalogul aplicației și pot conține greșeli. Verifică în cartea de service a mașinii.</small>
           <a className="btn g sm" style={{marginTop: 8}} target="_blank" rel="noreferrer" href={`https://www.google.com/search?q=${encodeURIComponent(`${car.brand} ${car.model || ''} ${car.year || ''} ${f.pname || ''} interval înlocuire km`)}`}>🔎 Verifică pe internet</a>

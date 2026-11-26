@@ -4,6 +4,7 @@ import * as THREE from 'three'
 import {RoomEnvironment} from 'three/examples/jsm/environments/RoomEnvironment.js'
 import React, {Suspense, useEffect, useMemo, useRef, useState} from 'react'
 import {BODY, MODEL_CFG, parseLook} from '../data'
+import Internals from './Internals'
 
 class Boundary extends React.Component {
   state = {e: false}
@@ -13,20 +14,28 @@ class Boundary extends React.Component {
 
 const FIN = {lucios: {metalness: .35, roughness: .2, clearcoat: 1, clearcoatRoughness: .04}, satin: {metalness: .25, roughness: .5, clearcoat: .35, clearcoatRoughness: .3}, mat: {metalness: .05, roughness: .9, clearcoat: 0, clearcoatRoughness: .5}, metal: {metalness: .9, roughness: .3, clearcoat: .6, clearcoatRoughness: .15}}
 
-function Procedural({body, look, xray}) {
+function Procedural({body, look, xray, ev}) {
   const [pts, gl] = BODY[body] || BODY.Sedan
   const mk = (p, o) => { const s = new THREE.Shape(); p.forEach(([x, y], i) => i ? s.lineTo(x, y) : s.moveTo(x, y)); return new THREE.ExtrudeGeometry(s, o) }
   const bodyG = useMemo(() => { const g = mk(pts, {depth: 1.5, bevelEnabled: true, bevelSize: .1, bevelThickness: .1, bevelSegments: 4}); g.translate(0, .12, -.75); return g }, [body])
   const glassG = useMemo(() => { const g = mk(gl, {depth: 1.76, bevelEnabled: false}); g.translate(0, .12, -.88); return g }, [body])
+  const gx0 = gl[0][0], gx3 = gl[gl.length - 1][0], span = gx3 - gx0
   const fx = Math.max(...pts.map(p => p[0])) + .1, rx = Math.min(...pts.map(p => p[0])) - .1, g2 = gl[gl.length - 1], fin = FIN[look.finish] || FIN.lucios
   return <group>
-    <mesh geometry={bodyG}><meshPhysicalMaterial color={look.body} {...fin} transparent opacity={1 - xray * .8}/></mesh>
-    <mesh geometry={glassG}><meshStandardMaterial color={look.glass} metalness={.9} roughness={.08} transparent opacity={.8 * (1 - xray * .5)}/></mesh>
+    <mesh geometry={bodyG}><meshPhysicalMaterial color={look.body} {...fin} transparent opacity={1 - xray * .8} depthWrite={xray < .01}/></mesh>
+    <mesh geometry={glassG}><meshStandardMaterial color={look.glass} metalness={.9} roughness={.08} transparent opacity={.8 * (1 - xray * .5)} depthWrite={xray < .01}/></mesh>
     {[.52, -.52].map(z => <mesh key={'h' + z} position={[fx, .6, z]}><boxGeometry args={[.07, .13, .32]}/><meshStandardMaterial color={look.head} emissive={look.head} emissiveIntensity={.9}/></mesh>)}
     {[.52, -.52].map(z => <mesh key={'t' + z} position={[rx, .66, z]}><boxGeometry args={[.07, .12, .3]}/><meshStandardMaterial color={look.tail} emissive={look.tail} emissiveIntensity={.8}/></mesh>)}
     <mesh position={[fx - .02, .52, 0]}><boxGeometry args={[.06, .13, .5]}/><meshStandardMaterial color={look.trim} roughness={.6}/></mesh>
     <mesh position={[fx - .06, .36, 0]}><boxGeometry args={[.1, .12, 1.45]}/><meshStandardMaterial color={look.trim} roughness={.6}/></mesh>
     <mesh position={[rx + .06, .36, 0]}><boxGeometry args={[.1, .12, 1.45]}/><meshStandardMaterial color={look.trim} roughness={.6}/></mesh>
+    {[1, -1].flatMap(k => [gx0 + span * .3, gx0 + span * .78].map((x, i) => <mesh key={`hd${k}${i}`} position={[x, .84, k * .87]}><boxGeometry args={[.17, .035, .045]}/><meshStandardMaterial color={look.trim} metalness={.7} roughness={.3}/></mesh>))}
+    {[1, -1].flatMap(k => [gx0 + span * .53, gx3 + .02].map((x, i) => <mesh key={`sm${k}${i}`} position={[x, .62, k * .86]}><boxGeometry args={[.016, .52, .012]}/><meshStandardMaterial color="#0a0a0c"/></mesh>))}
+    {[1, -1].map(k => <mesh key={'sk' + k} position={[(gx0 + gx3) / 2, .26, k * .87]}><boxGeometry args={[(gx3 - gx0) + .5, .06, .06]}/><meshStandardMaterial color={look.trim} roughness={.6}/></mesh>)}
+    <mesh position={[fx - .005, .38, 0]}><boxGeometry args={[.02, .12, .42]}/><meshStandardMaterial color="#f5f5f5"/></mesh>
+    <mesh position={[rx + .005, .4, 0]}><boxGeometry args={[.02, .12, .42]}/><meshStandardMaterial color="#f5f5f5"/></mesh>
+    {ev ? <mesh position={[rx + .45, .86, .87]} rotation={[Math.PI / 2, 0, 0]}><cylinderGeometry args={[.055, .055, .02, 16]}/><meshStandardMaterial color="#22d3ee" emissive="#22d3ee" emissiveIntensity={.8}/></mesh>
+      : <mesh position={[rx + .5, .86, .87]} rotation={[Math.PI / 2, 0, 0]}><cylinderGeometry args={[.055, .055, .02, 16]}/><meshStandardMaterial color={look.trim} metalness={.7} roughness={.3}/></mesh>}
     {[1, -1].map(k => <mesh key={'m' + k} position={[g2[0] + .06, 1.16, k * .95]}><boxGeometry args={[.13, .1, .09]}/><meshPhysicalMaterial color={look.body} {...fin}/></mesh>)}
     {[[1.15, .82], [1.15, -.82], [-1.15, .82], [-1.15, -.82]].map(([x, z], i) => <group key={i} position={[x, .38, z]} rotation={[Math.PI / 2, 0, 0]}>
       <mesh><cylinderGeometry args={[.38, .38, .28, 28]}/><meshStandardMaterial color={look.trim} roughness={.8}/></mesh>
@@ -230,10 +239,11 @@ export default function Car3D({car, parts, xray, focus, onPick, onMiss, stage, l
     fetch(u, {method: 'HEAD'}).then(r => { if (ok && r.ok && !(r.headers.get('content-type') || '').includes('text/html')) setUrl(u) }).catch(() => {})
     return () => { ok = false }
   }, [car.id, car.body, car.model_url])
-  const proc = <Procedural body={car.body} look={lk} xray={xray}/>
+  const proc = <Procedural body={car.body} look={lk} xray={xray} ev={car.powertrain === 'Electric'}/>
   return <Canvas camera={{position: stage === 'garaj' ? [2.2, 1.9, 3] : [4, 3, 5.5], fov: stage === 'garaj' ? 58 : 45}} dpr={[1, 2]} onPointerMissed={() => onMiss && onMiss()}>
     <ambientLight intensity={.8}/><directionalLight position={[3, 5, 4]} intensity={1.1}/><Env/>
     <Suspense fallback={null}>{url ? <Boundary key={url} fallback={proc}><Glb url={url} body={car.body} look={lk} xray={xray}/></Boundary> : proc}</Suspense>
+    <Internals body={car.body} powertrain={car.powertrain} xray={xray}/>
     <Suspense fallback={null}><Stage kind={stage}/></Suspense>
     {stage !== 'garaj' && <Shadow/>}
     {parts.map(p => <Hot key={p.sid || p.id} p={p} onPick={onPick}/>)}
